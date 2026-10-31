@@ -1,0 +1,13 @@
+DUITKU PWA - quick setup (full guide is in the chat)
+
+Files in this folder (keep them together, all at the same level):
+  index.html            the app
+  manifest.webmanifest  tells the phone the name, colour and icons
+  sw.js                 lets the app open offline
+  icon-192.png, icon-512.png, icon-maskable-512.png, apple-touch-icon.png
+
+A PWA must be served over HTTPS, so you need to put these files on a free host:
+  Option A (easiest): Netlify Drop  -> https://app.netlify.com/drop
+  Option B (permanent, free): GitHub Pages
+
+Then open the web address in Chrome on Android -> menu (three dots) -> Install app.
