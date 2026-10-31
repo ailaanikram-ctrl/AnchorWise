@@ -1,6 +1,6 @@
 {
-  "name": "Duitku – Household money tracker",
-  "short_name": "Duitku",
+  "name": "AnchorWise – Household money tracker",
+  "short_name": "AnchorWise",
   "description": "Track household income and spending, and get advice based on money available (Malaysia).",
   "start_url": "./",
   "scope": "./",

@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Duitku – Household money tracker (Malaysia)</title>
+<title>AnchorWise – Household money tracker (Malaysia)</title>
 <meta name="theme-color" content="#0d7a5f">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Duitku">
+<meta name="apple-mobile-web-app-title" content="AnchorWise">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f2f5f3;--sf:#fff;--ink:#14231d;--mu:#5d6c65;--ln:#dfe6e2;--ac:#0d7a5f;--ai:#fff;--wa:#b45309;--rd:#b42318;--ok:#0d7a5f;--tint:#e4f2ec;--bl:#2563eb;
@@ -165,7 +165,7 @@ function home(){
   var cs=Object.keys(bc).sort(function(a,b){return bc[b]-bc[a]}).slice(0,6),un=unneeded(ex),ut=sum(un),base=i>0?i:e;
   var legend=["need","want","save","other"].filter(function(k){return k!=="other"||g[k]>0}).map(function(k){return '<div class="mb"><span class="dot" style="background:'+GC[k]+'"></span><b>'+GN[k]+'</b> '+rm(g[k])+'<div class="mu">'+(base>0?Math.round(g[k]/base*100)+'% of '+(i>0?'income':'spending')+(i>0&&GT[k]?' (aim '+GT[k]+')':''):'')+'</div></div>'}).join("");
   var ppl=S.names.map(function(n,k){return [n,sum(ex.filter(function(t){return t.who===k}))]});
-  return '<div class="top"><h1>Dashboard</h1><div><button class="lnk" id="mp">‹</button> <b>'+mlabel()+'</b> <button class="lnk" id="mn">›</button></div></div>'+(inst?'<div class="card hero"><b>Install Duitku</b><div class="mu">Add it to your home screen to open it like an app, even offline.</div><button class="btn w" id="inst" style="margin-top:10px;background:var(--ai);color:var(--ac)">Install</button></div>':'')+
+  return '<div class="top"><h1>Dashboard</h1><div><button class="lnk" id="mp">‹</button> <b>'+mlabel()+'</b> <button class="lnk" id="mn">›</button></div></div>'+(inst?'<div class="card hero"><b>Install AnchorWise</b><div class="mu">Add it to your home screen to open it like an app, even offline.</div><button class="btn w" id="inst" style="margin-top:10px;background:var(--ai);color:var(--ac)">Install</button></div>':'')+
   '<div class="card hero"><div class="mu">Money available</div><div class="big">'+rm(allBal())+'</div><div class="three" style="margin-top:12px"><div><span class="mu">Income</span><b>'+rm(i)+'</b></div><div><span class="mu">Spent</span><b>'+rm(e)+'</b></div><div><span class="mu">Left this month</span><b>'+rm(i-e)+'</b></div></div></div>'+
   '<div class="card"><h2>Where the money goes</h2><div class="flex">'+donut(g,e)+'<div style="flex:1;min-width:150px">'+legend+'</div></div></div>'+
   '<div class="card"><h2>Last 6 months</h2>'+trend()+'<div class="mu"><span class="dot" style="background:var(--ac)"></span>Income <span class="dot" style="background:var(--wa);margin-left:12px"></span>Spent</div></div>'+
