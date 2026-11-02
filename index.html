@@ -120,7 +120,7 @@ var FLAGS=[
 ["The account number has reports on Semak Mule",4]];
 var FK=[[/\bapk\b|\.apk/,5],[/\btac\b|\botp\b|password|pin\b/,6],[/polis|police|mahkamah|court|lhdn|bnm|bank negara|kastam|customs|j&t|pos laju|courier|parcel/,4],[/guarantee|pasti untung|jamin|komisen|commission|task|like and|dividen harian/,7],[/pinjaman|loan|hadiah|prize|menang|won\b/,8],[/urgent|segera|sekarang|last slot|limited/,1]];
 var KEY="duitku.v1",S={tx:[],names:["Me","Partner"],open:0,debts:[]},view="home",ym=new Date().toISOString().slice(0,7),kind="exp",pre={};
-function load(){try{var d=JSON.parse(localStorage.getItem(KEY));if(d&&d.tx)S=d}catch(e){}S.debts=(S.debts||[]).map(function(d){if(d.pays){d.amt=d.amt+(d.extra||0)-d.pays.reduce(function(a,p){return a+p.amt},0);delete d.pays;delete d.extra}return d}).filter(function(d){return d.amt>0})}
+function load(){try{var d=JSON.parse(localStorage.getItem(KEY));if(d&&d.tx)S=d}catch(e){}S.debts=(S.debts||[]).map(function(d){if(d.pays){d.amt=d.amt+(d.extra||0)-d.pays.reduce(function(a,p){return a+p.amt},0);delete d.pays;delete d.extra}return d}).filter(function(d){return d.amt>0});LANG=S.lang==="ms"?"ms":"en";if(document.documentElement)document.documentElement.lang=LANG}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));return true}catch(e){return false}}
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
@@ -128,7 +128,7 @@ function rm(n){return "RM "+(Number(n)||0).toLocaleString("en-MY",{minimumFracti
 function short(c){return c.replace(/\s*\(.*\)/,"")}
 function month(){return S.tx.filter(function(t){return t.date.slice(0,7)===ym})}
 function sum(a){return a.reduce(function(s,t){return s+t.amt},0)}
-function mlabel(){var d=new Date(ym+"-01T00:00:00");return d.toLocaleDateString("en-MY",{month:"long",year:"numeric"})}
+function mlabel(){var d=new Date(ym+"-01T00:00:00");return d.toLocaleDateString(LANG==="ms"?"ms-MY":"en-MY",{month:"long",year:"numeric"})}
 function shift(n){var d=new Date(ym+"-01T00:00:00");d.setMonth(d.getMonth()+n);ym=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");render()}
 
 function advice(ex,inc){
@@ -202,7 +202,7 @@ function trend(){
   var data=ms.map(function(m){var t=S.tx.filter(function(y){return y.date.slice(0,7)===m});return [m,sum(t.filter(function(y){return y.type==="inc"})),sum(t.filter(function(y){return y.type==="exp"}))]});
   var mx=Math.max.apply(null,data.map(function(r){return Math.max(r[1],r[2])}).concat([1])),h='<svg viewBox="0 0 300 126" width="100%" role="img" aria-label="Income and spending for the last 6 months"><line x1="0" y1="100" x2="300" y2="100" stroke-width="1" style="stroke:var(--ln)"/>';
   data.forEach(function(r,i){var x=12+i*48,hi=r[1]/mx*90,he=r[2]/mx*90;
-    h+='<rect x="'+x+'" y="'+(100-hi).toFixed(1)+'" width="16" height="'+hi.toFixed(1)+'" rx="3" style="fill:var(--ac)"/><rect x="'+(x+18)+'" y="'+(100-he).toFixed(1)+'" width="16" height="'+he.toFixed(1)+'" rx="3" style="fill:var(--wa)"/><text x="'+(x+17)+'" y="116" text-anchor="middle" font-size="9" style="fill:var(--mu)">'+new Date(r[0]+"-01T00:00:00").toLocaleDateString("en-MY",{month:"short"})+'</text>'});
+    h+='<rect x="'+x+'" y="'+(100-hi).toFixed(1)+'" width="16" height="'+hi.toFixed(1)+'" rx="3" style="fill:var(--ac)"/><rect x="'+(x+18)+'" y="'+(100-he).toFixed(1)+'" width="16" height="'+he.toFixed(1)+'" rx="3" style="fill:var(--wa)"/><text x="'+(x+17)+'" y="116" text-anchor="middle" font-size="9" style="fill:var(--mu)">'+new Date(r[0]+"-01T00:00:00").toLocaleDateString(LANG==="ms"?"ms-MY":"en-MY",{month:"short"})+'</text>'});
   return h+'</svg>'}
 function unneeded(ex){return ex.filter(function(t){return TYPE[t.cat]==="want"&&!/^Sedekah/.test(t.cat)&&!t.keep}).sort(function(a,b){return b.amt-a.amt})}
 function dow(dt){return new Date(dt+"T00:00:00").getDay()}
@@ -327,8 +327,8 @@ function home(){
   '<div class="sec">Worth a look</div>'+dashDebt()+
   '<div class="card"><h2>Unneeded spending</h2>'+(un.length?'<p class="mu" style="margin-top:0">'+rm(ut)+' went on wants this month'+(e>0?' ('+Math.round(ut/e*100)+'% of spending)':'')+'. Cutting half would save about '+rm(ut/2)+' a month, or '+rm(ut*6)+' a year.</p>'+un.slice(0,6).map(function(t){return '<div class="item"><div><b>'+esc(t.purpose||t.payee||short(t.cat))+'</b><div class="mu">'+t.date.slice(8)+'/'+t.date.slice(5,7)+' · '+esc(short(t.cat))+'</div><button class="lnk" data-keep="'+t.id+'">Mark as needed</button></div><b class="neg">'+rm(t.amt)+'</b></div>'}).join("")+(un.length>6?'<p class="mu" style="margin-bottom:0">+ '+(un.length-6)+' more in Record.</p>':''):'<p class="mu" style="margin:0">No wants spending this month.</p>')+'</div>'+
   '<div class="card"><h2>Quick advice</h2>'+advice(ex,inc).slice(0,3).map(function(a){return '<div class="tip '+(a[0]==="tip"?"":a[0])+'">'+a[1]+'</div>'}).join("")+'</div>'+
-  '<div class="card"><h2>Who paid</h2>'+ppl.map(function(p){return '<div class="row"><span>'+esc(p[0])+'</span><b>'+rm(p[1])+'</b></div>'}).join("")+'<button class="lnk" id="rn" style="margin-top:8px">Change names</button></div>'}
-function opts(list){return list.map(function(c){return '<option>'+esc(c)+'</option>'}).join("")}
+  '<div class="card"><h2>Who paid</h2>'+ppl.map(function(p){return '<div class="row"><span>'+esc(p[0])+'</span><b>'+rm(p[1])+'</b></div>'}).join("")+'</div><div class="sec">Settings</div><div class="card"><label>Language<select id="lang"><option value="en"'+(LANG==="en"?" selected":"")+'>English</option><option value="ms"'+(LANG==="ms"?" selected":"")+'>Bahasa Melayu</option></select></label><div class="row mb"><span>Names</span><button class="lnk" id="rn">Change names</button></div><div class="row"><span>Starting balance: '+rm(S.open)+'</span><button class="lnk" id="ob">Change</button></div></div>'}
+function opts(list){return list.map(function(c){return '<option value="'+esc(c)+'">'+esc(c)+'</option>'}).join("")}
 function catSel(){return '<optgroup label="Needs">'+opts(CATS.need)+'</optgroup><optgroup label="Wants">'+opts(CATS.want)+'</optgroup><optgroup label="Savings">'+opts(CATS.save)+'</optgroup><optgroup label="Other">'+opts(CATS.other)+'</optgroup>'}
 function manualCard(){
   return '<div class="card"><div class="seg"><button data-k="exp" aria-pressed="'+(kind==="exp")+'">Expense</button><button data-k="inc" aria-pressed="'+(kind==="inc")+'">Income</button><button data-k="debt" aria-pressed="'+(kind==="debt")+'">Debt</button></div>'+
@@ -376,7 +376,7 @@ function interpret(raw){
   var who=0;S.names.forEach(function(n,k){if(k>0&&n&&l.indexOf(n.toLowerCase())>-1)who=k});
   return {type:inc?"inc":"exp",amt:amt,cat:cat,who:who,payee:payee,purpose:mkp(cat,payee,inc,raw),raw:raw,ch:ch,date:date,review:cat==="Other"}}
 var pend=[],rows=[],done=null,amode="paste",csvAll=false,scan=null;
-function optsS(list,sel){return list.map(function(c){return '<option'+(c===sel?' selected':'')+'>'+esc(c)+'</option>'}).join("")}
+function optsS(list,sel){return list.map(function(c){return '<option value="'+esc(c)+'"'+(c===sel?' selected':'')+'>'+esc(c)+'</option>'}).join("")}
 function catSelS(sel){return '<optgroup label="Needs">'+optsS(CATS.need,sel)+'</optgroup><optgroup label="Wants">'+optsS(CATS.want,sel)+'</optgroup><optgroup label="Savings">'+optsS(CATS.save,sel)+'</optgroup><optgroup label="Other">'+optsS(CATS.other,sel)+'</optgroup>'}
 function meaning(p){return (p.type==="inc"?"Received ":"Paid ")+rm(p.amt)+(p.payee?(p.type==="inc"?" from ":" to ")+p.payee:"")+(p.ch?" via "+p.ch:"")+", counted as "+short(p.cat)+"."}
 function pvHtml(){
@@ -505,6 +505,7 @@ function render(){
     ym=$("dt").value.slice(0,7);view="home";render()});
   q("go",risk);q("ask",ask);q("inst",function(){if(!inst)return;inst.prompt();inst.userChoice.then(function(){inst=null;render()})});
   if($("ds"))$("ds").oninput=scan;
+  if($("lang"))$("lang").onchange=function(){S.lang=this.value==="ms"?"ms":"en";LANG=S.lang;if(document.documentElement)document.documentElement.lang=LANG;save();render()};
   q("csvs",function(){var f=csvFile();try{saveFile(f.name,f.text);$("cm").textContent="Saved "+f.name+" to your downloads."}catch(e){$("cm").textContent="Couldn’t save the file on this device."}});
   q("csvh",function(){sendFile(csvFile(),function(m){$("cm").textContent=m})});
   q("rcb",function(){$("rcam").click()});q("rpb",function(){$("rpick").click()});
@@ -527,6 +528,436 @@ document.addEventListener("click",function(e){
   else if(t.dataset.del){if(confirm("Delete this entry?")){S.tx=S.tx.filter(function(x){return x.id!==t.dataset.del});rcDel(t.dataset.del);save();render()}}
   else if(t.dataset.chk){var x=S.tx.filter(function(y){return y.id===t.dataset.chk})[0];pre={d:(x.raw||x.purpose||x.payee||"")+" "+rm(x.amt)};view="check";render();scan()}
 });
+var DICT=`Dashboard ⇒ Papan Pemuka
+Add ⇒ Tambah
+Advice ⇒ Nasihat
+Record ⇒ Rekod
+Debts ⇒ Hutang
+Debt ⇒ Hutang
+Settings ⇒ Tetapan
+Language ⇒ Bahasa
+Names ⇒ Nama
+Name {} ⇒ Nama {1}
+Change names ⇒ Tukar nama
+Starting balance ⇒ Baki permulaan
+Starting balance: {} ⇒ Baki permulaan: {1}
+Balance in your account before you started using this app (RM) ⇒ Baki dalam akaun anda sebelum anda mula menggunakan aplikasi ini (RM)
+Install AnchorWise ⇒ Pasang AnchorWise
+Add it to your home screen to open it like an app, even offline. ⇒ Tambahkan ke skrin utama untuk membukanya seperti aplikasi, walaupun tanpa internet.
+Install ⇒ Pasang
+Previous month ⇒ Bulan sebelumnya
+Next month ⇒ Bulan seterusnya
+Money available ⇒ Wang tersedia
+Income ⇒ Pendapatan
+Spent ⇒ Dibelanjakan
+Left this month ⇒ Baki bulan ini
+Your spending habits ⇒ Tabiat perbelanjaan anda
+When you spend ⇒ Bila anda berbelanja
+How you pay ⇒ Cara anda membayar
+Where the money goes ⇒ Ke mana wang pergi
+Top spending ⇒ Perbelanjaan teratas
+Last {} months ⇒ {1} bulan lepas
+Worth a look ⇒ Perlu diberi perhatian
+Unneeded spending ⇒ Perbelanjaan tidak perlu
+Quick advice ⇒ Nasihat ringkas
+Who paid ⇒ Siapa membayar
+Needs ⇒ Keperluan
+Wants ⇒ Kehendak
+Savings ⇒ Simpanan
+Other ⇒ Lain-lain
+Need ⇒ Keperluan
+Want ⇒ Kehendak
+Me ⇒ Saya
+Partner ⇒ Pasangan
+Mon ⇒ Isn
+Tue ⇒ Sel
+Wed ⇒ Rab
+Thu ⇒ Kha
+Fri ⇒ Jum
+Sat ⇒ Sab
+Sun ⇒ Ahd
+Monday ⇒ Isnin
+Tuesday ⇒ Selasa
+Wednesday ⇒ Rabu
+Thursday ⇒ Khamis
+Friday ⇒ Jumaat
+Saturday ⇒ Sabtu
+Sunday ⇒ Ahad
+Busiest day: ⇒ Hari paling sibuk:
+, about {} on average (last {} months). ⇒ , purata kira-kira {1} (dalam {2} bulan lepas).
+{}% of income ⇒ {1}% daripada pendapatan
+{}% of spending ⇒ {1}% daripada perbelanjaan
+{}% of income (aim at least {}%) ⇒ {1}% daripada pendapatan (sasaran sekurang-kurangnya {2}%)
+{}% of income (aim up to {}%) ⇒ {1}% daripada pendapatan (sasaran sehingga {2}%)
+Add some spending and your habits will show up here: mamak and delivery, payday and weekend patterns, e-wallet use and more. ⇒ Tambah beberapa perbelanjaan dan tabiat anda akan dipaparkan di sini: mamak dan penghantaran, corak hari gaji dan hujung minggu, penggunaan e-dompet dan banyak lagi.
+More insights ({}) ⇒ Lagi pandangan ({1})
+No expenses yet. ⇒ Belum ada perbelanjaan.
+No wants spending this month. ⇒ Tiada perbelanjaan kehendak bulan ini.
+Mark as needed ⇒ Tandakan sebagai perlu
++ {} more in Record. ⇒ + {1} lagi dalam Rekod.
+{} went on wants this month ({}% of spending). ⇒ {1} dibelanjakan untuk kehendak bulan ini ({2}% daripada perbelanjaan).
+Cutting half would save about {} a month, or {} a year. ⇒ Mengurangkan separuh akan menjimatkan kira-kira {1} sebulan, atau {2} setahun.
+Add your first income and expenses for this month to get advice. ⇒ Tambah pendapatan dan perbelanjaan pertama anda bulan ini untuk mendapat nasihat.
+Eating out ⇒ Makan di luar
+Eating out (mamak, kopitiam, restaurant) ⇒ Makan di luar (mamak, kopitiam, restoran)
+Food delivery ⇒ Penghantaran makanan
+Food delivery (GrabFood, foodpanda, ShopeeFood) ⇒ Penghantaran makanan (GrabFood, foodpanda, ShopeeFood)
+Groceries ⇒ Barangan runcit
+Groceries (Giant, Lotus’s, Mydin, {} Speedmart) ⇒ Barangan runcit (Giant, Lotus’s, Mydin, {1} Speedmart)
+Rent / housing loan ⇒ Sewa / pinjaman perumahan
+Electricity, water & sewerage ⇒ Elektrik, air & pembetungan
+Electricity, water & sewerage (TNB, Air Selangor, IWK) ⇒ Elektrik, air & pembetungan (TNB, Air Selangor, IWK)
+Internet & phone ⇒ Internet & telefon
+Internet & phone (Unifi, Maxis, CelcomDigi, U Mobile) ⇒ Internet & telefon (Unifi, Maxis, CelcomDigi, U Mobile)
+Petrol ⇒ Petrol
+Tolls & parking ⇒ Tol & parkir
+Public transport & TnG reload ⇒ Pengangkutan awam & tambah nilai TnG
+Medical, clinic & pharmacy ⇒ Perubatan, klinik & farmasi
+Insurance & takaful ⇒ Insurans & takaful
+Education & childcare ⇒ Pendidikan & jagaan anak
+Car loan & maintenance ⇒ Pinjaman & penyelenggaraan kereta
+PTPTN / study loan ⇒ PTPTN / pinjaman pelajaran
+Family support ⇒ Sokongan keluarga
+Family support (parents, duit belanja) ⇒ Sokongan keluarga (ibu bapa, duit belanja)
+Road tax, assessment & other tax ⇒ Cukai jalan, cukai taksiran & cukai lain
+Zakat ⇒ Zakat
+Debt repayment ⇒ Bayaran hutang
+Debt repayment (borrowed money) ⇒ Bayaran hutang (wang dipinjam)
+Ride-hailing ⇒ E-hailing
+Ride-hailing (Grab, inDrive) ⇒ E-hailing (Grab, inDrive)
+Online shopping ⇒ Beli-belah dalam talian
+Online shopping (Shopee, Lazada, TikTok Shop) ⇒ Beli-belah dalam talian (Shopee, Lazada, TikTok Shop)
+Clothing & shoes ⇒ Pakaian & kasut
+Gadgets & electronics ⇒ Gajet & elektronik
+Subscriptions ⇒ Langganan
+Subscriptions (Netflix, Astro, Spotify) ⇒ Langganan (Netflix, Astro, Spotify)
+Cinema & entertainment ⇒ Pawagam & hiburan
+Travel & holidays ⇒ Perjalanan & percutian
+Hobbies & sports ⇒ Hobi & sukan
+Personal care & salon ⇒ Penjagaan diri & salon
+Gifts, angpow & festive ⇒ Hadiah, angpau & perayaan
+Gifts, angpow & festive (Raya, CNY, Deepavali) ⇒ Hadiah, angpau & perayaan (Raya, CNY, Deepavali)
+Games & in-app top-ups ⇒ Permainan & tambah nilai dalam aplikasi
+PayLater repayment ⇒ Bayaran PayLater
+PayLater repayment (Grab, Shopee, Atome) ⇒ Bayaran PayLater (Grab, Shopee, Atome)
+Sedekah & donations ⇒ Sedekah & derma
+Savings (ASB, Tabung Haji, bank) ⇒ Simpanan (ASB, Tabung Haji, bank)
+Investment ⇒ Pelaburan
+Investment (EPF i-Saraan, unit trust, stocks) ⇒ Pelaburan (EPF i-Saraan, unit amanah, saham)
+Emergency fund ⇒ Dana kecemasan
+Salary ⇒ Gaji
+Bonus ⇒ Bonus
+Side income / freelance ⇒ Pendapatan sampingan / bebas
+Business ⇒ Perniagaan
+Allowance ⇒ Elaun
+Rental income ⇒ Pendapatan sewa
+Dividend / interest ⇒ Dividen / faedah
+Other income ⇒ Pendapatan lain
+Eating out ⇒ Makan di luar
+{} meals ⇒ {1} hidangan
+at mamak, kopitiam or restaurants, {} in total (about {} each). ⇒ di mamak, kopitiam atau restoran, jumlah {1} (kira-kira {2} setiap satu).
+{} orders, {} (about {} per order). ⇒ {1} pesanan, {2} (kira-kira {3} setiap pesanan).
+Delivery fees and markups are inside that price. ⇒ Yuran penghantaran dan caj tambahan termasuk dalam harga itu.
+Cook or buy ⇒ Masak atau beli
+You spent more on eating out and delivery ({}) than on groceries ({}). ⇒ Anda berbelanja lebih untuk makan di luar dan penghantaran ({1}) berbanding barangan runcit ({2}).
+After payday ⇒ Selepas hari gaji
+{}% of your spending lands in the {} days after payday. ⇒ {1}% perbelanjaan anda berlaku dalam {2} hari selepas hari gaji.
+{}% of your spending lands in the {} days after payday (I assumed payday is near month-end). ⇒ {1}% perbelanjaan anda berlaku dalam {2} hari selepas hari gaji (saya andaikan hari gaji hampir akhir bulan).
+An even spread would be about {}%. ⇒ Taburan sekata ialah kira-kira {1}%.
+That looks balanced. ⇒ Nampak seimbang.
+That is a payday splurge pattern. ⇒ Itu corak berbelanja besar selepas gaji.
+Weekends ⇒ Hujung minggu
+You spend about {} a day on Saturday and Sunday versus {} on weekdays ({} times). ⇒ Anda berbelanja kira-kira {1} sehari pada Sabtu dan Ahad berbanding {2} pada hari bekerja ({3} kali ganda).
+{} orders in the last {} months, {}. ⇒ {1} pesanan dalam {2} bulan lepas, {3}.
+{} was on a double-date sale day like {} or {} ({}). ⇒ {1} berlaku pada hari jualan tarikh kembar seperti {2} atau {3} ({4}).
+{} of them were on a double-date sale day like {} or {} ({}). ⇒ {1} daripadanya berlaku pada hari jualan tarikh kembar seperti {2} atau {3} ({4}).
+Small purchases ⇒ Pembelian kecil
+{} purchases under {} added up to {} ({}% of spending). ⇒ {1} pembelian di bawah {2} berjumlah {3} ({4}% daripada perbelanjaan).
+Small amounts are easy to miss. ⇒ Jumlah kecil mudah terlepas pandang.
+{}% of the spending from messages went through e-wallets (TnG, GrabPay, ShopeePay, Boost). ⇒ {1}% perbelanjaan daripada mesej menggunakan e-dompet (TnG, GrabPay, ShopeePay, Boost).
+The rest used banks or other methods. ⇒ Selebihnya menggunakan bank atau kaedah lain.
+Getting around ⇒ Pengangkutan
+{} on petrol, tolls, parking, transit and rides ({}% of income). ⇒ {1} untuk petrol, tol, parkir, pengangkutan awam dan perjalanan ({2}% daripada pendapatan).
+{} on petrol, tolls, parking, transit and rides. ⇒ {1} untuk petrol, tol, parkir, pengangkutan awam dan perjalanan.
+PayLater ⇒ PayLater
+{} repayment, {}. ⇒ {1} bayaran, {2}.
+{} repayments, {}. ⇒ {1} bayaran, {2}.
+Treat it like a loan. ⇒ Anggap ia seperti pinjaman.
+{} payment, {} a month. ⇒ {1} bayaran, {2} sebulan.
+{} payments, {} a month. ⇒ {1} bayaran, {2} sebulan.
+Cancel any you have not used in {} days. ⇒ Batalkan mana-mana yang belum anda guna dalam {1} hari.
+Festive and gifts ⇒ Perayaan dan hadiah
+{} on angpow, Raya, CNY or Deepavali gifts ({}% of spending). ⇒ {1} untuk angpau, Raya, CNY atau hadiah Deepavali ({2}% daripada perbelanjaan).
+Setting aside a little each month makes festive season easier. ⇒ Mengetepikan sedikit setiap bulan menjadikan musim perayaan lebih mudah.
+Giving back ⇒ Menderma
+{} on zakat and sedekah this month. ⇒ {1} untuk zakat dan sedekah bulan ini.
+Mamak regular ⇒ Kaki mamak
+Delivery fan ⇒ Peminat penghantaran
+Payday splurger ⇒ Boros selepas gaji
+Weekend spender ⇒ Berbelanja hujung minggu
+Sale-day shopper ⇒ Pembeli hari jualan
+Small-spend leaker ⇒ Bocor belanja kecil
+E-wallet user ⇒ Pengguna e-dompet
+Ride-hailing regular ⇒ Pengguna e-hailing tetap
+PayLater user ⇒ Pengguna PayLater
+Generous giver ⇒ Pemurah
+You spent more than you earned this month ({} over). ⇒ Anda berbelanja lebih daripada pendapatan bulan ini (lebih {1}).
+Cut wants first, and avoid covering the gap with PayLater. ⇒ Kurangkan kehendak dahulu, dan elakkan menampung kekurangan dengan PayLater.
+You kept only {}% of income. ⇒ Anda hanya menyimpan {1}% daripada pendapatan.
+Aim for at least {}%, even if you start by automating a small transfer to savings on payday. ⇒ Sasarkan sekurang-kurangnya {1}%, walaupun anda bermula dengan pemindahan automatik kecil ke simpanan pada hari gaji.
+You kept {}% of income. ⇒ Anda menyimpan {1}% daripada pendapatan.
+Getting to {}% would be a good next target. ⇒ Mencapai {1}% ialah sasaran seterusnya yang baik.
+That meets the usual {}% savings target. ⇒ Itu memenuhi sasaran simpanan biasa {1}%.
+Needs take {}% of income (guide: about {}%). ⇒ Keperluan mengambil {1}% daripada pendapatan (panduan: kira-kira {2}%).
+Look at the biggest bills: rent, car loan, phone and internet plans. ⇒ Lihat bil terbesar: sewa, pinjaman kereta, pelan telefon dan internet.
+Wants take {}% of income (guide: about {}%). ⇒ Kehendak mengambil {1}% daripada pendapatan (panduan: kira-kira {2}%).
+Check food delivery, online shopping and subscriptions first. ⇒ Semak penghantaran makanan, beli-belah dalam talian dan langganan dahulu.
+Eating out and delivery ({}) is more than groceries ({}). ⇒ Makan di luar dan penghantaran ({1}) melebihi barangan runcit ({2}).
+Cooking a few more meals at home is usually the quickest saving. ⇒ Memasak beberapa hidangan lagi di rumah biasanya penjimatan paling pantas.
+Food delivery is {}% of spending. ⇒ Penghantaran makanan ialah {1}% daripada perbelanjaan.
+Delivery fees and markups add up; pickup or self-order costs less. ⇒ Yuran penghantaran dan caj tambahan terkumpul; ambil sendiri atau pesan sendiri lebih murah.
+You paid {} on PayLater. ⇒ Anda membayar {1} untuk PayLater.
+Treat it like debt: only use it for things you could already afford, and clear it before buying new items. ⇒ Anggap ia seperti hutang: hanya guna untuk barang yang anda memang mampu, dan langsaikan sebelum membeli barang baharu.
+Subscriptions: {} this month. ⇒ Langganan: {1} bulan ini.
+Cancel any you haven’t used in the last {} days. ⇒ Batalkan mana-mana yang tidak anda guna dalam {1} hari lepas.
+Nothing went into savings or investments this month. ⇒ Tiada wang masuk ke simpanan atau pelaburan bulan ini.
+Build an emergency fund of {} to {} months of expenses first. ⇒ Bina dana kecemasan bernilai {1} hingga {2} bulan perbelanjaan dahulu.
+Was it planned? ⇒ Adakah ia dirancang?
+Available now ⇒ Tersedia sekarang
+After paying ⇒ Selepas membayar
+Months of essentials ⇒ Bulan keperluan
+Safety buffer ⇒ Simpanan keselamatan
+Free to spend ⇒ Bebas dibelanjakan
+Can I afford it? ⇒ Mampukah saya?
+Tell me what you plan to pay for. ⇒ Beritahu saya apa yang anda rancang untuk bayar.
+The safety buffer is one month of your usual essentials. ⇒ Simpanan keselamatan ialah keperluan biasa anda untuk sebulan.
+What is it? ⇒ Apa itu?
+How will you pay? ⇒ Bagaimana anda akan membayar?
+One-time payment ⇒ Bayaran sekali
+Monthly payment (loan, instalment, subscription) ⇒ Bayaran bulanan (pinjaman, ansuran, langganan)
+Is it a need or a want? ⇒ Adakah ia keperluan atau kehendak?
+Not sure, guess from the name ⇒ Tidak pasti, teka daripada nama
+Payment method ⇒ Kaedah pembayaran
+Cash, bank or e-wallet ⇒ Tunai, bank atau e-dompet
+PayLater or instalment plan ⇒ PayLater atau pelan ansuran
+Get advice ⇒ Dapatkan nasihat
+Enter the amount first. ⇒ Masukkan jumlah dahulu.
+I need your numbers first. ⇒ Saya perlukan angka anda dahulu.
+Set your starting balance in Record and add some income and spending, then ask again. ⇒ Tetapkan baki permulaan anda dalam Rekod dan tambah sedikit pendapatan dan perbelanjaan, kemudian tanya semula.
+I couldn’t tell what this is, so I treated it as a want. ⇒ Saya tidak pasti ini apa, jadi saya anggap ia kehendak.
+You can’t afford this yet. ⇒ Anda belum mampu membelinya.
+You are {} short of the full price. ⇒ Anda kekurangan {1} daripada harga penuh.
+At your usual surplus of {} a month, you could save it in about {} month(s). ⇒ Dengan lebihan biasa anda sebanyak {1} sebulan, anda boleh menyimpannya dalam kira-kira {2} bulan.
+Your spending is at or above your income, so free up money from wants first. ⇒ Perbelanjaan anda sama atau melebihi pendapatan, jadi bebaskan wang daripada kehendak dahulu.
+Possible, but it uses your safety buffer. ⇒ Boleh, tetapi ia menggunakan simpanan keselamatan anda.
+Not now. ⇒ Bukan sekarang.
+It would eat into your safety buffer. ⇒ Ia akan menggunakan simpanan keselamatan anda.
+After paying you would have {}, which is less than one month of essentials ({}). ⇒ Selepas membayar, anda akan ada {1}, kurang daripada keperluan sebulan ({2}).
+You can afford it, but it’s a big bite. ⇒ Anda mampu, tetapi jumlahnya besar.
+It uses {}% of your free money. ⇒ Ia menggunakan {1}% wang bebas anda.
+Wait {} days; if you still want it then, buy it. ⇒ Tunggu {1} hari; jika anda masih mahukannya, belilah.
+Go ahead. ⇒ Teruskan.
+This looks affordable. ⇒ Ini nampak mampu milik.
+Yes, you can afford it. ⇒ Ya, anda mampu.
+You would still have {} after paying. ⇒ Anda masih akan ada {1} selepas membayar.
+It’s a need, so compare prices (Shopee, Lazada, local shops) before paying. ⇒ Ini keperluan, jadi bandingkan harga (Shopee, Lazada, kedai tempatan) sebelum membayar.
+It’s a want, so move the money from another wants category instead of your savings. ⇒ Ini kehendak, jadi alihkan wang daripada kategori kehendak lain, bukan daripada simpanan anda.
+This adds {} a month, which is {} a year. ⇒ Ini menambah {1} sebulan, iaitu {2} setahun.
+Fixed commitments would be about {}% of your income. ⇒ Komitmen tetap anda akan menjadi kira-kira {1}% daripada pendapatan.
+Keep loans and instalments under about {}%. ⇒ Pastikan pinjaman dan ansuran di bawah kira-kira {1}%.
+Too heavy for your income. ⇒ Terlalu berat untuk pendapatan anda.
+You would have to cut something else. ⇒ Anda terpaksa mengurangkan perkara lain.
+Your usual monthly surplus is {}, which is less than this payment. ⇒ Lebihan bulanan biasa anda ialah {1}, kurang daripada bayaran ini.
+Affordable, but check it’s worth it. ⇒ Mampu, tetapi pastikan ia berbaloi.
+It takes {}% of income for something you want. ⇒ Ia mengambil {1}% pendapatan untuk sesuatu yang anda mahu.
+This monthly cost looks manageable. ⇒ Kos bulanan ini nampak boleh diurus.
+PayLater or an instalment plan is a trap here: you couldn’t pay in full today. ⇒ PayLater atau pelan ansuran adalah perangkap di sini: anda tidak mampu membayar penuh hari ini.
+You could pay in full, so pay cash and skip PayLater fees and interest. ⇒ Anda boleh membayar penuh, jadi bayar tunai dan elakkan yuran serta faedah PayLater.
+You still owe {} to others, and {} of it is due within {} days (already taken out of your free money). ⇒ Anda masih berhutang {1} kepada orang lain, dan {2} daripadanya perlu dibayar dalam {3} hari (sudah ditolak daripada wang bebas anda).
+You still owe {} to others. ⇒ Anda masih berhutang {1} kepada orang lain.
+Pay debts before wants. ⇒ Bayar hutang sebelum kehendak.
+Is a seller or offer a scam? ⇒ Adakah penjual atau tawaran ini penipuan?
+Describe the shop, seller, caller or offer. ⇒ Terangkan kedai, penjual, pemanggil atau tawaran itu.
+Tick everything that applies. ⇒ Tandakan semua yang berkenaan.
+This is a guide for spotting common Malaysian scams, not proof either way. ⇒ Ini panduan untuk mengesan penipuan biasa di Malaysia, bukan bukti sama ada ya atau tidak.
+Who or what is it? ⇒ Siapa atau apa itu?
+Asked to pay into a personal bank account or e-wallet, not a company or the platform ⇒ Diminta membayar ke akaun bank peribadi atau e-dompet, bukan syarikat atau platform
+Pressure to pay now (urgent, limited time, “last slot”) ⇒ Didesak membayar sekarang (segera, masa terhad, “slot terakhir”)
+Price is far below the normal market price ⇒ Harga jauh lebih rendah daripada harga pasaran biasa
+They contacted me first by WhatsApp, Telegram, SMS or phone call ⇒ Mereka menghubungi saya dahulu melalui WhatsApp, Telegram, SMS atau panggilan telefon
+Caller says they are police, court, LHDN, Bank Negara, customs, courier or my bank ⇒ Pemanggil mengaku polis, mahkamah, LHDN, Bank Negara, kastam, kurier atau bank saya
+Asked to install an APK file or app from a link or chat ⇒ Diminta memasang fail APK atau aplikasi daripada pautan atau sembang
+Asked for my TAC/OTP, PIN or online banking password ⇒ Diminta TAC/OTP, PIN atau kata laluan perbankan dalam talian saya
+Promises guaranteed returns, or easy commission for liking, ordering or “tasks” ⇒ Menjanjikan pulangan terjamin, atau komisen mudah untuk menyukai, memesan atau “tugasan”
+Must pay a fee first to get a loan, prize, parcel or job ⇒ Perlu bayar yuran dahulu untuk dapat pinjaman, hadiah, bungkusan atau kerja
+Seller refuses COD, meeting up or the platform’s payment protection ⇒ Penjual enggan COD, berjumpa atau perlindungan pembayaran platform
+I can’t find the company on SSM, or it has no licence for what it offers ⇒ Saya tidak jumpa syarikat itu di SSM, atau ia tiada lesen untuk apa yang ditawarkan
+The account number has reports on Semak Mule ⇒ Nombor akaun itu ada laporan di Semak Mule
+Check risk ⇒ Semak risiko
+Verify before you pay ⇒ Sahkan sebelum membayar
+Check the account or phone number on the Royal Malaysia Police ⇒ Semak akaun atau nombor telefon pada laman Polis Diraja Malaysia
+. Check licences on Bank Negara’s Financial Consumer Alert List and the Securities Commission’s Investor Alert List. Check companies on SSM. If you already paid, call your bank right away and the National Scam Response Centre at {}. ⇒ . Semak lesen pada Senarai Amaran Pengguna Kewangan Bank Negara dan Senarai Amaran Pelabur Suruhanjaya Sekuriti. Semak syarikat di SSM. Jika anda sudah membayar, hubungi bank anda dengan segera dan Pusat Respons Scam Kebangsaan di {1}.
+High risk. ⇒ Risiko tinggi.
+Do not pay or share any code. ⇒ Jangan bayar atau kongsi sebarang kod.
+Stop contact. ⇒ Hentikan perhubungan.
+Never give TAC/OTP or install files sent in chat. ⇒ Jangan sekali-kali beri TAC/OTP atau pasang fail yang dihantar dalam sembang.
+Verify through the official website or number you find yourself, and check Semak Mule. ⇒ Sahkan melalui laman web rasmi atau nombor yang anda cari sendiri, dan semak Semak Mule.
+If you already paid, call your bank and {} now. ⇒ Jika anda sudah membayar, hubungi bank anda dan {1} sekarang.
+Be careful. ⇒ Berhati-hati.
+Several warning signs. ⇒ Beberapa tanda amaran.
+Ask for company details, pay only through the platform’s protected checkout or COD, and check Semak Mule before transferring. ⇒ Minta butiran syarikat, bayar hanya melalui pembayaran dilindungi platform atau COD, dan semak Semak Mule sebelum membuat pemindahan.
+No major red flags ticked. ⇒ Tiada tanda amaran besar ditandakan.
+Still verify the seller’s reviews, use protected payment, and keep chat records. ⇒ Tetap semak ulasan penjual, guna pembayaran dilindungi, dan simpan rekod sembang.
+Add ⇒ Tambah
+Scan receipt ⇒ Imbas resit
+Paste message ⇒ Tampal mesej
+Type it in ⇒ Taip sendiri
+Expense ⇒ Perbelanjaan
+Paste bank or e-wallet messages ⇒ Tampal mesej bank atau e-dompet
+One message per line ⇒ Satu mesej setiap baris
+Pasted messages are read and added to your record automatically. ⇒ Mesej yang ditampal dibaca dan ditambah ke rekod anda secara automatik.
+If a purpose is wrong, fix it afterwards with Edit. ⇒ Jika tujuan salah, betulkan kemudian dengan Edit.
+Paste at least one message. ⇒ Tampal sekurang-kurangnya satu mesej.
+Added to record ⇒ Ditambah ke rekod
+Nothing new added ⇒ Tiada yang baharu ditambah
+{} duplicate skipped, {} without an amount skipped. ⇒ {1} pendua dilangkau, {2} tanpa jumlah dilangkau.
+{} duplicate skipped. ⇒ {1} pendua dilangkau.
+{} without an amount skipped. ⇒ {1} tanpa jumlah dilangkau.
+Undo ⇒ Buat asal
+Open record ⇒ Buka rekod
+Edit ⇒ Edit
+Edit entry ⇒ Edit entri
+Close ⇒ Tutup
+Cancel ⇒ Batal
+Save ⇒ Simpan
+Check category ⇒ Semak kategori
+Amount (RM) ⇒ Jumlah (RM)
+Total (RM) ⇒ Jumlah (RM)
+Category ⇒ Kategori
+Paid by ⇒ Dibayar oleh
+Paid by / received by ⇒ Dibayar oleh / diterima oleh
+Shop ⇒ Kedai
+Shop or person ⇒ Kedai atau orang
+Date ⇒ Tarikh
+Note ⇒ Nota
+Note (optional) ⇒ Nota (pilihan)
+Items (optional) ⇒ Item (pilihan)
+Description ⇒ Penerangan
+Enter an amount above {}. ⇒ Masukkan jumlah melebihi {1}.
+Enter who you borrowed from. ⇒ Masukkan daripada siapa anda meminjam.
+Who did you borrow from? ⇒ Daripada siapa anda meminjam?
+Date borrowed ⇒ Tarikh meminjam
+Due date (optional) ⇒ Tarikh bayaran (pilihan)
+To pay back a debt, choose the category “Debt repayment (borrowed money)” and enter who you paid. ⇒ Untuk membayar balik hutang, pilih kategori “Bayaran hutang (wang dipinjam)” dan masukkan siapa yang anda bayar.
+It reduces what you owe them. ⇒ Ia mengurangkan jumlah yang anda hutang kepada mereka.
+Scan a receipt ⇒ Imbas resit
+Take a photo of the receipt. ⇒ Ambil foto resit.
+I read the shop, total and date, and keep the photo with the entry. ⇒ Saya baca kedai, jumlah dan tarikh, dan simpan foto bersama entri.
+Open camera ⇒ Buka kamera
+Choose a photo instead ⇒ Pilih foto sebaliknya
+The reader downloads the first time, so you need internet. ⇒ Pembaca dimuat turun pada kali pertama, jadi anda perlukan internet.
+Always check the total before saving. ⇒ Sentiasa semak jumlah sebelum menyimpan.
+Check this receipt ⇒ Semak resit ini
+Check the details below, then save. ⇒ Semak butiran di bawah, kemudian simpan.
+Save with receipt ⇒ Simpan dengan resit
+Enter the total from the receipt. ⇒ Masukkan jumlah daripada resit.
+Reading the receipt… ⇒ Membaca resit…
+Preparing the photo… ⇒ Menyediakan foto…
+Try again ⇒ Cuba lagi
+That file couldn’t be read as an image. ⇒ Fail itu tidak dapat dibaca sebagai imej.
+I couldn’t find the total. ⇒ Saya tidak jumpa jumlahnya.
+Please enter it. ⇒ Sila masukkannya.
+I couldn’t load the receipt reader. ⇒ Saya tidak dapat memuatkan pembaca resit.
+It needs internet the first time. ⇒ Ia memerlukan internet pada kali pertama.
+Fill in the details and the photo is still saved. ⇒ Isi butiran dan foto masih akan disimpan.
+I couldn’t read this photo. ⇒ Saya tidak dapat membaca foto ini.
+Receipt ⇒ Resit
+Receipt photo ⇒ Foto resit
+The photo isn’t on this device any more. ⇒ Foto itu tiada lagi pada peranti ini.
+Paid {} to {}, counted as {}. ⇒ Dibayar {1} kepada {2}, dikira sebagai {3}.
+This month ⇒ Bulan ini
+All records ⇒ Semua rekod
+Save CSV ⇒ Simpan CSV
+Send CSV ⇒ Hantar CSV
+Shared. ⇒ Dikongsi.
+Couldn’t share the file. ⇒ Tidak dapat berkongsi fail.
+Sharing isn’t available here, so the file was saved instead. ⇒ Perkongsian tidak tersedia di sini, jadi fail disimpan sebaliknya.
+Attach it to an email or WhatsApp. ⇒ Lampirkannya pada e-mel atau WhatsApp.
+Couldn’t save the file on this device. ⇒ Tidak dapat menyimpan fail pada peranti ini.
+Could not save on this device. ⇒ Tidak dapat menyimpan pada peranti ini.
+Balance (RM) ⇒ Baki (RM)
+Debit ⇒ Debit
+Credit ⇒ Kredit
+Balance brought forward ⇒ Baki dibawa ke hadapan
+Total and closing balance ⇒ Jumlah dan baki akhir
+Closing balance ⇒ Baki akhir
+No entries this month. ⇒ Tiada entri bulan ini.
+Search description, category or message ⇒ Cari penerangan, kategori atau mesej
+Search the record ⇒ Cari dalam rekod
+Delete ⇒ Padam
+Delete this entry? ⇒ Padam entri ini?
+Delete this debt from the list? ⇒ Padam hutang ini daripada senarai?
+Expenses already in Record stay. ⇒ Perbelanjaan yang sudah ada dalam Rekod akan kekal.
+Total you owe ⇒ Jumlah hutang anda
+People ⇒ Orang
+Due in {} days ⇒ Tamat dalam {1} hari
+Due in {} day ⇒ Tamat dalam {1} hari
+Overdue by {} days ⇒ Lewat {1} hari
+Overdue by {} day ⇒ Lewat {1} hari
+Due {}/{}/{} ⇒ Tamat {1}/{2}/{3}
+Borrowed {} · Paid back {} ⇒ Dipinjam {1} · Dibayar balik {2}
+{}% paid ⇒ {1}% dibayar
+Pay ⇒ Bayar
+Open ⇒ Buka
+Add a debt ⇒ Tambah hutang
+No debts right now. ⇒ Tiada hutang buat masa ini.
+Add one with ⇒ Tambah satu dengan
+. To pay someone back, use ⇒ . Untuk membayar balik seseorang, guna
+on their row, or paste a message like “paid back Ali {}”. Their debt shrinks, and disappears once it is fully paid. ⇒ pada baris mereka, atau tampal mesej seperti “paid back Ali {1}”. Hutang mereka berkurang, dan hilang apabila dibayar sepenuhnya.
+If you paid everything today you would still have {}. ⇒ Jika anda membayar semuanya hari ini, anda masih akan ada {1}.
+You owe more than you have available. ⇒ Anda berhutang lebih daripada wang yang anda ada.
+Pay the soonest due first and hold off on wants. ⇒ Bayar yang paling hampir tarikhnya dahulu dan tangguhkan kehendak.
+Who or what ⇒ Siapa atau apa
+e.g. Ali, Mak, bank ⇒ cth. Ali, Mak, bank
+e.g. new phone, Netflix, motorbike loan ⇒ cth. telefon baharu, Netflix, pinjaman motosikal
+Average spending by day of the week ⇒ Purata perbelanjaan mengikut hari dalam seminggu
+Spending split by needs, wants and savings ⇒ Pecahan perbelanjaan mengikut keperluan, kehendak dan simpanan
+Income and spending for the last {} months ⇒ Pendapatan dan perbelanjaan {1} bulan lepas
+Spent ⇒ Dibelanjakan
+Saved ⇒ Disimpan
+Change ⇒ Ubah`;
+var LANG="en",MAP={},RULES=[];
+var NUMRX=/RM\s?-?\d[\d,]*(?:\.\d+)?|\d+(?:\.\d+)?/g;
+function nrm(t){var v=[];return {k:t.replace(NUMRX,function(m){v.push(m);return "{}"}),v:v}}
+function fill(tpl,v){return tpl.replace(/\{(\d+)\}/g,function(a,i){return v[i-1]!=null?v[i-1]:""})}
+DICT.split("\n").forEach(function(l){var i=l.indexOf(" ⇒ ");if(i>0)MAP[nrm(l.slice(0,i)).k]=l.slice(i+3)});
+RULES.push([/^(.+?) – (.+)$/,function(m){var a=trCore(m[1]);return a!==m[1]?a+" – "+m[2]:null}]);
+RULES.push([/^Received from (.+)$/,function(m){return "Diterima daripada "+m[1]}]);
+RULES.push([/^Payment to (.+)$/,function(m){return "Bayaran kepada "+m[1]}]);
+RULES.push([/^Debt repayment to (.+)$/,function(m){return "Bayaran hutang kepada "+m[1]}]);
+RULES.push([/^(.+?) from (.+)$/,function(m){var a=trCore(m[1]);return a!==m[1]?a+" daripada "+m[2]:null}]);
+RULES.push([/^(Paid|Received) (RM\s?-?[\d,.]+)(?: (to|from) (.+?))?(?: via (.+?))?, counted as (.+)\.$/,function(m){return (m[1]==="Paid"?"Dibayar ":"Diterima ")+m[2]+(m[3]?(m[3]==="to"?" kepada ":" daripada ")+m[4]:"")+(m[5]?" melalui "+m[5]:"")+", dikira sebagai "+trCore(m[6])+"."}]);
+RULES.push([/^Saved (.+\.csv) to your downloads\.$/,function(m){return "Disimpan "+m[1]+" ke muat turun anda."}]);
+RULES.push([/^still owed to (\d+) (?:people|person)(?: · next due (\S+) \((.+)\))?$/,function(m){return "masih terhutang kepada "+m[1]+" orang"+(m[2]?" · tarikh bayaran seterusnya "+m[2]+" ("+m[3]+")":"")}]);
+RULES.push([/^Your biggest single expense was (RM\s?-?[\d,.]+) \((.+)\)\. Was it planned\?$/,function(m){return "Perbelanjaan tunggal terbesar anda ialah "+m[1]+" ("+trCore(m[2])+"). Adakah ia dirancang?"}]);
+function trCore(s){
+  var n=nrm(s),r=MAP[n.k];if(r!=null)return fill(r,n.v);
+  for(var i=0;i<RULES.length;i++){var m=s.match(RULES[i][0]);if(m){var o=RULES[i][1](m);if(o!=null)return o}}
+  if(s.indexOf(" · ")>-1){var ch=false,o2=s.split(" · ").map(function(p){var q=trCore(p);if(q!==p)ch=true;return q});if(ch)return o2.join(" · ")}
+  var sent=n.k.match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g);
+  if(sent&&sent.length>1){var vi=0,ch2=false,res=sent.map(function(x){var xs=x.trim(),c=(xs.match(/\{\}/g)||[]).length,vals=n.v.slice(vi,vi+c),q=MAP[xs];vi+=c;if(q!=null){ch2=true;return fill(q,vals)}var k=0;return xs.replace(/\{\}/g,function(){return vals[k++]})});if(ch2)return res.join(" ")}
+  return s}
+function trText(t){if(LANG!=="ms"||typeof t!=="string")return t;var s=t.trim();if(!s)return t;var o=trCore(s);return o===s?t:t.replace(s,function(){return o})}
+function trTree(root){
+  if(LANG!=="ms"||!root)return;
+  if(root.nodeType===3){var o=trText(root.nodeValue);if(o!==root.nodeValue)root.nodeValue=o;return}
+  if(root.nodeType!==1)return;
+  var w=document.createTreeWalker(root,4,null),n,a=[];while((n=w.nextNode()))a.push(n);
+  a.forEach(function(x){var p=x.parentNode;if(p&&(p.nodeName==="SCRIPT"||p.nodeName==="STYLE"))return;var o=trText(x.nodeValue);if(o!==x.nodeValue)x.nodeValue=o});
+  var els=[root].concat([].slice.call(root.querySelectorAll("[placeholder],[aria-label],[alt]")));
+  els.forEach(function(e){["placeholder","aria-label","alt"].forEach(function(at){var v=e.getAttribute&&e.getAttribute(at);if(v){var o=trText(v);if(o!==v)e.setAttribute(at,o)}})})}
+if(window.MutationObserver&&document.body)new MutationObserver(function(ms){if(LANG!=="ms")return;ms.forEach(function(m){if(m.type==="characterData")trTree(m.target);else [].forEach.call(m.addedNodes,trTree)})}).observe(document.body,{childList:true,subtree:true,characterData:true});
+if(typeof window.confirm==="function"&&typeof window.prompt==="function"){var _cf=window.confirm.bind(window),_pr=window.prompt.bind(window);window.confirm=function(m){return _cf(trText(m))};window.prompt=function(m,d){return _pr(trText(m),d)}}
 var inst=null;
 window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();inst=e;if(view==="home")render()});
 window.addEventListener("appinstalled",function(){inst=null;if(view==="home")render()});
