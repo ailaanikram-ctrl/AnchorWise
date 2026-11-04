@@ -82,9 +82,9 @@ dialog{border:0;border-radius:20px;background:var(--sf);color:var(--ink);width:m
 var CATS={need:["Groceries (Giant, Lotus’s, Mydin, 99 Speedmart)","Rent / housing loan","Electricity, water & sewerage (TNB, Air Selangor, IWK)","Internet & phone (Unifi, Maxis, CelcomDigi, U Mobile)","Petrol","Tolls & parking","Public transport & TnG reload","Medical, clinic & pharmacy","Insurance & takaful","Education & childcare","Car loan & maintenance","PTPTN / study loan","Family support (parents, duit belanja)","Road tax, assessment & other tax","Zakat","Debt repayment (borrowed money)"],
 want:["Eating out (mamak, kopitiam, restaurant)","Food delivery (GrabFood, foodpanda, ShopeeFood)","Ride-hailing (Grab, inDrive)","Online shopping (Shopee, Lazada, TikTok Shop)","Clothing & shoes","Gadgets & electronics","Subscriptions (Netflix, Astro, Spotify)","Cinema & entertainment","Travel & holidays","Hobbies & sports","Personal care & salon","Gifts, angpow & festive (Raya, CNY, Deepavali)","Games & in-app top-ups","PayLater repayment (Grab, Shopee, Atome)","Sedekah & donations"],
 save:["Savings (ASB, Tabung Haji, bank)","Investment (EPF i-Saraan, unit trust, stocks)","Emergency fund"],
-other:["Other"]};
+other:["Other","Paid for a friend (to be repaid)"]};
 var TYPE={};Object.keys(CATS).forEach(function(k){CATS[k].forEach(function(c){TYPE[c]=k})});
-var INC=["Salary","Bonus","Side income / freelance","Business","Allowance","Rental income","Dividend / interest","Other income"];
+var INC=["Salary","Bonus","Side income / freelance","Business","Allowance","Rental income","Dividend / interest","Other income","Paid back by friend"];
 var KW=[[/grabfood|foodpanda|shopeefood|deliveroo/,3+0],[/grab\b|indrive|maxim/,"Ride-hailing (Grab, inDrive)"],[/mamak|kopitiam|restoran|nasi|kopi|teh |makan|cafe|mcd|kfc|starbucks/,"Eating out (mamak, kopitiam, restaurant)"],[/giant|lotus|mydin|99 speed|aeon|econsave|tesco|pasar|jaya grocer/,"Groceries (Giant, Lotus’s, Mydin, 99 Speedmart)"],[/petronas|shell|petron|bhp|caltex|petrol/,"Petrol"],[/tng|touch n go|toll|plus\b|parking|parkir/,"Tolls & parking"],[/rapid|mrt|lrt|ktm/,"Public transport & TnG reload"],[/tnb|syabas|air selangor|iwk|elektrik|water bill/,"Electricity, water & sewerage (TNB, Air Selangor, IWK)"],[/unifi|maxis|celcom|digi|umobile|u mobile|hotlink|yoodo|prepaid/,"Internet & phone (Unifi, Maxis, CelcomDigi, U Mobile)"],[/netflix|astro|spotify|disney|youtube prem|icloud/,"Subscriptions (Netflix, Astro, Spotify)"],[/shopee|lazada|tiktok shop|zalora/,"Online shopping (Shopee, Lazada, TikTok Shop)"],[/clinic|klinik|pharmacy|farmasi|guardian|watsons|hospital/,"Medical, clinic & pharmacy"],[/rent|sewa|housing loan|mortgage/,"Rent / housing loan"],[/ptptn/,"PTPTN / study loan"],[/atome|paylater|spaylater/,"PayLater repayment (Grab, Shopee, Atome)"],[/asb|tabung haji|saving/,"Savings (ASB, Tabung Haji, bank)"],[/epf|kwsp|unit trust|saham|stock/,"Investment (EPF i-Saraan, unit trust, stocks)"],[/zakat/,"Zakat"],[/angpow|raya|duit raya|hadiah|gift/,"Gifts, angpow & festive (Raya, CNY, Deepavali)"],
 [/tealive|zus|chagee|marrybrown|secret recipe|old town|pizza|sushi|ayam|burger|boba|bubble|bakery|roti|restaurant|bistro|food court|medan selera/,"Eating out (mamak, kopitiam, restaurant)"],
 [/7-eleven|7eleven|kk mart|family ?mart|mynews|mr diy|speedmart|village grocer|hero market/,"Groceries (Giant, Lotus’s, Mydin, 99 Speedmart)"],
@@ -119,14 +119,14 @@ var FLAGS=[
 ["I can’t find the company on SSM, or it has no licence for what it offers",2],
 ["The account number has reports on Semak Mule",4]];
 var FK=[[/\bapk\b|\.apk/,5],[/\btac\b|\botp\b|password|pin\b/,6],[/polis|police|mahkamah|court|lhdn|bnm|bank negara|kastam|customs|j&t|pos laju|courier|parcel/,4],[/guarantee|pasti untung|jamin|komisen|commission|task|like and|dividen harian/,7],[/pinjaman|loan|hadiah|prize|menang|won\b/,8],[/urgent|segera|sekarang|last slot|limited/,1]];
-var KEY="duitku.v1",S={tx:[],names:["Me","Partner"],open:0,debts:[]},view="home",ym=new Date().toISOString().slice(0,7),kind="exp",pre={};
-function load(){try{var d=JSON.parse(localStorage.getItem(KEY));if(d&&d.tx)S=d}catch(e){}S.debts=(S.debts||[]).map(function(d){if(d.pays){d.amt=d.amt+(d.extra||0)-d.pays.reduce(function(a,p){return a+p.amt},0);delete d.pays;delete d.extra}return d}).filter(function(d){return d.amt>0});LANG=S.lang==="ms"?"ms":"en";if(document.documentElement)document.documentElement.lang=LANG}
+var KEY="duitku.v1",S={tx:[],names:["Me","Partner"],open:0,debts:[],lent:[]},view="home",ym=new Date().toISOString().slice(0,7),kind="exp",pre={};
+function load(){try{var d=JSON.parse(localStorage.getItem(KEY));if(d&&d.tx)S=d}catch(e){}S.debts=(S.debts||[]).map(function(d){if(d.pays){d.amt=d.amt+(d.extra||0)-d.pays.reduce(function(a,p){return a+p.amt},0);delete d.pays;delete d.extra}return d}).filter(function(d){return d.amt>0});S.lent=S.lent||[];LANG=S.lang==="ms"?"ms":"en";if(document.documentElement)document.documentElement.lang=LANG}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));return true}catch(e){return false}}
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function rm(n){return "RM "+(Number(n)||0).toLocaleString("en-MY",{minimumFractionDigits:2,maximumFractionDigits:2})}
 function short(c){return c.replace(/\s*\(.*\)/,"")}
-function month(){return S.tx.filter(function(t){return t.date.slice(0,7)===ym})}
+function month(){return S.tx.filter(function(t){return t.date.slice(0,7)===ym&&!t.xfer})}
 function sum(a){return a.reduce(function(s,t){return s+t.amt},0)}
 function mlabel(){var d=new Date(ym+"-01T00:00:00");return d.toLocaleDateString(LANG==="ms"?"ms-MY":"en-MY",{month:"long",year:"numeric"})}
 function shift(n){var d=new Date(ym+"-01T00:00:00");d.setMonth(d.getMonth()+n);ym=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");render()}
@@ -172,13 +172,36 @@ function applyDebt(t){
 function cleanup(){
   var ch=false;
   dpeople().forEach(function(p){if(p.owed<=0.004){S.debts=S.debts.filter(function(d){return dk(d.who)!==p.key});S.tx.forEach(function(t){if(t.debtKey===p.key){delete t.debtKey;delete t.debtApplied}});ch=true}});
-  if(ch)save()}
+  cleanLent();if(ch)save()}
 function totalOwed(){return dpeople().reduce(function(a,p){return a+p.owed},0)}
 function dueSoon(){var l=new Date();l.setDate(l.getDate()+30);l=iso(l);return dpeople().reduce(function(a,p){return a+(p.due&&p.due<=l?p.owed:0)},0)}
+function lpeople(){
+  var m={},o=[];S.lent.forEach(function(d){var k=dk(d.who);if(!m[k]){m[k]={key:k,name:d.who,lent:0,paid:0,entries:[]};o.push(k)}m[k].lent+=d.amt;m[k].entries.push(d)});
+  S.tx.forEach(function(t){if(t.lentKey&&m[t.lentKey])m[t.lentKey].paid+=t.lentApplied||0});
+  return o.map(function(k){var p=m[k];p.owed=Math.max(0,p.lent-p.paid);return p})}
+function applyRecv(t){
+  delete t.lentApplied;delete t.lentKey;
+  if(t.type!=="inc"||t.cat!=="Paid back by friend"||!t.payee)return;
+  var ps=lpeople().filter(function(x){return x.owed>0.004}),p=ps.filter(function(x){return x.key===dk(t.payee)})[0]||ps.filter(function(x){return dmatch(t.payee,x.name)})[0];
+  if(!p)return;t.lentKey=p.key;t.lentApplied=Math.min(t.amt,p.owed)}
+function rcRelease(rid){if(!rid)return;if(S.tx.some(function(t){return t.rcId===rid})||S.lent.some(function(d){return d.rid===rid}))return;rcDel(rid)}
+function cleanLent(){
+  var ch=false;
+  lpeople().forEach(function(p){if(p.owed<=0.004){S.lent=S.lent.filter(function(d){return dk(d.who)!==p.key});S.tx.forEach(function(t){if(t.lentKey===p.key){delete t.lentKey;delete t.lentApplied}});p.entries.forEach(function(e){rcRelease(e.rid)});ch=true}});
+  if(ch)save()}
+function totalLent(){return lpeople().reduce(function(a,p){return a+p.owed},0)}
+function lentCards(){
+  var ps=lpeople().filter(function(p){return p.owed>0}).sort(function(a,b){return b.owed-a.owed});
+  if(!ps.length)return "";
+  return '<div class="sec">Owed to you</div><div class="card"><div class="row"><span class="mu">Friends owe you</span><b class="pos">'+rm(totalLent())+'</b></div></div>'+ps.map(function(p){
+    var pct=Math.min(100,Math.round(p.paid/p.lent*100));
+    return '<div class="card"><div class="row"><b>'+esc(p.name)+'</b><b class="pos">'+rm(p.owed)+'</b></div><div class="mu">Lent '+rm(p.lent)+' · Paid back '+rm(p.paid)+'</div><div class="bar"><i style="width:'+pct+'%"></i></div>'+
+    p.entries.map(function(e){return '<div class="row" style="margin-top:6px"><span class="mu">'+fd(e.date)+(e.shop?' · '+esc(e.shop):'')+' · '+rm(e.amt)+'</span>'+(e.rid?'<button class="lnk" data-send="'+e.id+'">Send receipt</button>':'')+'</div>'}).join("")+
+    '<div style="display:flex;gap:14px;align-items:center;margin-top:10px"><button class="btn" data-lpaid="'+esc(p.key)+'">Got paid</button><button class="lnk" data-ldel="'+esc(p.key)+'">Delete</button></div></div>'}).join("")+'<p class="mu" id="lm"></p>'}
 function dashDebt(){
-  var ps=dpeople().filter(function(p){return p.owed>0});if(!ps.length)return "";
+  var ps=dpeople().filter(function(p){return p.owed>0}),ls=lpeople().filter(function(p){return p.owed>0});if(!ps.length&&!ls.length)return "";
   var nx=ps.filter(function(p){return p.due}).sort(function(a,b){return a.due<b.due?-1:1})[0];
-  return '<div class="card"><div class="row"><h2 style="margin:0">Debts</h2><button class="lnk" data-v="debt">Open</button></div><div class="big neg">'+rm(totalOwed())+'</div><div class="mu">still owed to '+ps.length+' '+(ps.length>1?'people':'person')+(nx?' · next due '+fd(nx.due)+' ('+esc(nx.name)+')':'')+'</div></div>'}
+  return '<div class="card"><div class="row"><h2 style="margin:0">Debts</h2><button class="lnk" data-v="debt">Open</button></div>'+(ps.length?'<div class="big neg">'+rm(totalOwed())+'</div><div class="mu">still owed to '+ps.length+' '+(ps.length>1?'people':'person')+(nx?' · next due '+fd(nx.due)+' ('+esc(nx.name)+')':'')+'</div>':'')+(ls.length?'<div class="row" style="margin-top:'+(ps.length?'12':'0')+'px"><span class="mu">Friends owe you</span><b class="pos">'+rm(totalLent())+'</b></div>':'')+'</div>'}
 function debts(){
   cleanup();
   var ps=dpeople().sort(function(a,b){return b.owed-a.owed}),tot=totalOwed(),bal=allBal();
@@ -189,7 +212,7 @@ function debts(){
     var pct=Math.min(100,Math.round(p.paid/p.borrowed*100)),st="";
     if(p.due){var n=daysTo(p.due);st=n<0?'<b class="neg">Overdue by '+(-n)+' day'+(-n>1?'s':'')+'</b>':(n<=7?'<b style="color:var(--wa)">Due in '+n+' day'+(n!==1?'s':'')+'</b>':'Due '+fd(p.due))}
     return '<div class="card"><div class="row"><b>'+esc(p.name)+'</b><b class="neg">'+rm(p.owed)+'</b></div><div class="mu">Borrowed '+rm(p.borrowed)+' · Paid back '+rm(p.paid)+'</div><div class="bar"><i style="width:'+pct+'%"></i></div><div class="row mu"><span>'+pct+'% paid</span><span>'+st+'</span></div><div style="display:flex;gap:14px;align-items:center;margin-top:8px"><button class="btn" data-dpay="'+esc(p.key)+'">Pay</button><button class="lnk" data-ddel="'+esc(p.key)+'">Delete</button></div></div>'}).join("")
-  :'<div class="card"><p style="margin:0">No debts right now.</p><p class="mu" style="margin-bottom:0">Add one with <b>Add a debt</b>. To pay someone back, use <b>Pay</b> on their row, or paste a message like “paid back Ali RM100”. Their debt shrinks, and disappears once it is fully paid.</p></div>')}
+  :'<div class="card"><p style="margin:0">No debts right now.</p><p class="mu" style="margin-bottom:0">Add one with <b>Add a debt</b>. To pay someone back, use <b>Pay</b> on their row, or paste a message like “paid back Ali RM100”. Their debt shrinks, and disappears once it is fully paid.</p></div>')+lentCards()}
 function allBal(){return (+S.open||0)+S.tx.reduce(function(a,t){return a+(t.type==="inc"?t.amt:-t.amt)},0)}
 var GC={need:"var(--ac)",want:"var(--wa)",save:"var(--bl)",other:"var(--mu)"},GN={need:"Needs",want:"Wants",save:"Savings",other:"Other"},GT={need:"up to 50%",want:"up to 30%",save:"at least 20%"};
 function donut(g,tot){
@@ -199,7 +222,7 @@ function donut(g,tot){
 function trend(){
   var d=new Date(ym+"-01T00:00:00"),ms=[];
   for(var i=5;i>=0;i--){var x=new Date(d.getFullYear(),d.getMonth()-i,1);ms.push(x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0"))}
-  var data=ms.map(function(m){var t=S.tx.filter(function(y){return y.date.slice(0,7)===m});return [m,sum(t.filter(function(y){return y.type==="inc"})),sum(t.filter(function(y){return y.type==="exp"}))]});
+  var data=ms.map(function(m){var t=S.tx.filter(function(y){return y.date.slice(0,7)===m&&!y.xfer});return [m,sum(t.filter(function(y){return y.type==="inc"})),sum(t.filter(function(y){return y.type==="exp"}))]});
   var mx=Math.max.apply(null,data.map(function(r){return Math.max(r[1],r[2])}).concat([1])),h='<svg viewBox="0 0 300 126" width="100%" role="img" aria-label="Income and spending for the last 6 months"><line x1="0" y1="100" x2="300" y2="100" stroke-width="1" style="stroke:var(--ln)"/>';
   data.forEach(function(r,i){var x=12+i*48,hi=r[1]/mx*90,he=r[2]/mx*90;
     h+='<rect x="'+x+'" y="'+(100-hi).toFixed(1)+'" width="16" height="'+hi.toFixed(1)+'" rx="3" style="fill:var(--ac)"/><rect x="'+(x+18)+'" y="'+(100-he).toFixed(1)+'" width="16" height="'+he.toFixed(1)+'" rx="3" style="fill:var(--wa)"/><text x="'+(x+17)+'" y="116" text-anchor="middle" font-size="9" style="fill:var(--mu)">'+new Date(r[0]+"-01T00:00:00").toLocaleDateString(LANG==="ms"?"ms-MY":"en-MY",{month:"short"})+'</text>'});
@@ -208,7 +231,7 @@ function unneeded(ex){return ex.filter(function(t){return TYPE[t.cat]==="want"&&
 function dow(dt){return new Date(dt+"T00:00:00").getDay()}
 function habits(ex,inc){
   var d0=new Date(ym+"-01T00:00:00");d0.setMonth(d0.getMonth()-2);var from=iso(d0),to=ym+"-31";
-  var r=S.tx.filter(function(t){return t.type==="exp"&&t.date>=from&&t.date<=to}),rt=sum(r),B=[],R=[];
+  var r=S.tx.filter(function(t){return t.type==="exp"&&!t.xfer&&t.date>=from&&t.date<=to}),rt=sum(r),B=[],R=[];
   var by=function(re,a){return (a||ex).filter(function(t){return re.test(t.cat)})},cs=function(a){return {n:a.length,s:sum(a)}};
   var eo=cs(by(/^Eating out/)),fd=cs(by(/^Food delivery/)),gr=cs(by(/^Groceries/));
   if(eo.n){R.push(["Eating out","<b>"+eo.n+" meals</b> at mamak, kopitiam or restaurants, "+rm(eo.s)+" in total (about "+rm(eo.s/eo.n)+" each)."]);if(eo.n>=12)B.push("Mamak regular")}
@@ -272,14 +295,15 @@ function parseReceipt(text){
   for(var i=0;i<Math.min(8,lines.length);i++){var l=lines[i].replace(/[^A-Za-z0-9&'.\- ]/g," ").replace(/\s+/g," ").trim();if(l.replace(/[^A-Za-z]/g,"").length>=3&&!skip.test(l)){shop=l;break}}
   if(shop&&shop===shop.toUpperCase())shop=shop.replace(/\S+/g,function(t){return t.charAt(0)+t.slice(1).toLowerCase()});
   var cat=guess(text.toLowerCase());if(cat==="Other"&&shop)cat=guess(shop.toLowerCase());
-  var items=lines.filter(function(l){return /[A-Za-z]{3}/.test(l)&&/\d+[.,]\d{2}\s*[A-Za-z]?$/.test(l)&&!bad.test(l)&&!/total|jumlah|amount/i.test(l)}).slice(0,10).map(function(l){return l.replace(/\s+/g," ")}).join("; ").slice(0,160);
-  return {amt:amt,date:date,payee:shop,cat:cat,raw:items}}
+  var list=[];lines.forEach(function(l,i){if(/[A-Za-z]{3}/.test(l)&&/\d+[.,]\d{2}\s*[A-Za-z]?$/.test(l)&&!bad.test(l)&&!/total|jumlah|amount/i.test(l)){var v=money(l);if(v.length)list.push({n:(l.replace(/\s*[\d,]+[.,]\d{2}\s*[A-Za-z]?$/,"").replace(/^\d+\s*[xX]?\s+/,"").replace(/\s+/g," ").trim()||l),a:v[v.length-1],li:i})}});
+  var items=list.slice(0,10).map(function(x){return x.n}).join("; ").slice(0,160);
+  return {amt:amt,date:date,payee:shop,cat:cat,raw:items,items:list.slice(0,40)}}
 function fileToCanvas(file,cb){
   var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){var k=Math.min(1,1400/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);var g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);cb(c)};im.onerror=function(){cb(null)};im.src=r.result};r.onerror=function(){cb(null)};r.readAsDataURL(file)}
 function loadOcr(cb){
   if(window.Tesseract)return cb(true);
   var s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";s.onload=function(){cb(!!window.Tesseract)};s.onerror=function(){cb(false)};document.head.appendChild(s)}
-function blankScan(img,msg){return {img:img,msg:msg,amt:0,date:iso(new Date()),payee:"",cat:"Other",raw:""}}
+function blankScan(img,msg){return {img:img,msg:msg,amt:0,date:iso(new Date()),payee:"",cat:"Other",raw:"",items:[]}}
 function handleReceipt(file){
   if(!file)return;
   fileToCanvas(file,function(c){
@@ -288,13 +312,52 @@ function handleReceipt(file){
     loadOcr(function(ok){
       if(!ok){scan=blankScan(img,"I couldn’t load the receipt reader. It needs internet the first time. Fill in the details and the photo is still saved.");render();return}
       window.Tesseract.recognize(c,"eng",{logger:function(m){var e=$("rsp");if(e&&m&&m.progress!=null)e.textContent=Math.round(m.progress*100)+"% · "+(m.status||"")}}).then(function(res){
-        var p=parseReceipt(res.data.text||"");scan={img:img,amt:p.amt,date:p.date,payee:p.payee,cat:p.cat,raw:p.raw,msg:p.amt>0?"Check the details below, then save.":"I couldn’t find the total. Please enter it."};render()
+        var L=(res.data.lines||[]).filter(function(l){return l.text&&l.text.trim()}),txt=L.length?L.map(function(l){return l.text.trim()}).join("\n"):(res.data.text||"");
+        var p=parseReceipt(txt);p.items.forEach(function(it){var l=L.length?L[it.li]:null;it.box=l&&l.bbox?[l.bbox.x0,l.bbox.y0,l.bbox.x1,l.bbox.y1]:null});
+        scan={img:img,w:c.width,h:c.height,amt:p.amt,date:p.date,payee:p.payee,cat:p.cat,raw:p.raw,items:p.items,msg:p.amt>0?"Check the details below, then save.":"I couldn’t find the total. Please enter it."};render()
       }).catch(function(){scan=blankScan(img,"I couldn’t read this photo. Fill in the details and the photo is still saved.");render()})})})}
-function saveReceipt(){
-  var a=parseFloat($("ram").value);if(!(a>0)){$("rer").textContent="Enter the total from the receipt.";return}
-  var pe=$("rsh").value.trim(),ct=$("rct").value,dt=$("rdt").value||iso(new Date()),nt=$("rnt").value.trim(),id=String(Date.now());
-  var t0={id:id,type:"exp",amt:a,cat:ct,who:+$("rwh").value,payee:pe,purpose:mkp(ct,pe,false,nt||pe),raw:nt,ch:"",note:"",date:dt};
-  rcPut(id,scan.img,function(ok){if(ok)t0.rc=true;applyDebt(t0);S.tx.unshift(t0);cleanup();if(!save()){S.tx.shift();var e=$("rer");if(e)e.textContent="Could not save on this device.";return}scan=null;ym=dt.slice(0,7);view="hist";render()})}
+function saveReceipt(send){
+  var er=function(t){var e=$("rer");if(e)e.textContent=t};
+  var a=parseFloat($("ram").value);if(!(a>0)){er("Enter the total from the receipt.");return}
+  var pe=$("rsh").value.trim(),ct=$("rct").value,dt=$("rdt").value||iso(new Date()),nt=$("rnt").value.trim(),fr=($("rfn")?$("rfn").value:"").trim(),fa=parseFloat($("rfa")?$("rfa").value:"")||0;
+  if(send&&!(fa>0)){er("Enter your friend’s name and their part first.");return}
+  if(fa>0&&!fr){er("Enter your friend’s name.");return}
+  if(fa>a+0.004){er("Your friend’s part can’t be more than the total.");return}
+  var sel=[].slice.call(document.querySelectorAll("[data-it]:checked")).map(function(c){return scan.items[+c.dataset.it]}),rid=String(Date.now()),who=+$("rwh").value,mine=Math.round((a-fa)*100)/100;
+  rcPut(rid,scan.img,function(ok){
+    var now=Date.now(),lid=String(now+2),n0=S.tx.length,l0=S.lent.length,t0,t1;
+    if(mine>0.004){t0={id:String(now),type:"exp",amt:mine,cat:ct,who:who,payee:pe,purpose:mkp(ct,pe,false,nt||pe),raw:nt,ch:"",note:"",date:dt};if(ok){t0.rc=true;t0.rcId=rid}applyDebt(t0);S.tx.unshift(t0)}
+    if(fa>0){t1={id:String(now+1),type:"exp",amt:fa,cat:"Paid for a friend (to be repaid)",who:who,payee:fr,purpose:"Paid for "+fr+(pe?" at "+pe:""),raw:nt,ch:"",note:"",date:dt,xfer:true};if(ok){t1.rc=true;t1.rcId=rid}S.tx.unshift(t1);S.lent.unshift({id:lid,txid:t1.id,who:fr,amt:fa,date:dt,shop:pe,rid:ok?rid:"",items:sel.map(function(x){return {n:x.n,a:x.a,b:x.box||null}})})}
+    if(!save()){S.tx=S.tx.slice(S.tx.length-n0);S.lent=S.lent.slice(S.lent.length-l0);er("Could not save on this device.");return}
+    cleanup();scan=null;ym=dt.slice(0,7);view=(send&&fa>0)?"debt":"hist";render();if(send&&fa>0)sendReceipt(lid)})}
+function splitCalc(){
+  if(!scan||!scan.items)return;
+  var all=scan.items.reduce(function(a,x){return a+x.a},0),sel=0;
+  [].slice.call(document.querySelectorAll("[data-it]")).forEach(function(c){if(c.checked)sel+=scan.items[+c.dataset.it].a});
+  var tot=parseFloat($("ram").value)||scan.amt||all,ratio=all>0&&Math.abs(tot-all)/all<.4?tot/all:1;
+  $("rfa").value=sel>0?(Math.round(sel*ratio*100)/100).toFixed(2):"";updateMine()}
+function updateMine(){var t=parseFloat($("ram")?$("ram").value:"")||0,f=parseFloat($("rfa")?$("rfa").value:"")||0,e=$("rmine");if(e)e.textContent=f>0?"Your part: "+rm(Math.max(0,t-f)):""}
+function highlightImage(src,boxes,label,cb){
+  var im=new Image();
+  im.onload=function(){var bh=Math.max(70,Math.round(im.width*.1)),c=document.createElement("canvas");c.width=im.width;c.height=im.height+bh;var g=c.getContext("2d");
+    g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0);
+    boxes.forEach(function(b){g.fillStyle="rgba(255,214,0,.4)";g.fillRect(b[0]-6,b[1]-3,b[2]-b[0]+12,b[3]-b[1]+6);g.strokeStyle="rgba(214,150,0,.9)";g.lineWidth=2;g.strokeRect(b[0]-6,b[1]-3,b[2]-b[0]+12,b[3]-b[1]+6)});
+    g.fillStyle="#2e7d6b";g.fillRect(0,im.height,c.width,bh);g.fillStyle="#fff";g.font="bold "+Math.round(bh*.46)+"px sans-serif";g.textAlign="center";g.textBaseline="middle";g.fillText(label,c.width/2,im.height+bh/2);
+    c.toBlob(function(b){cb(b)},"image/jpeg",.85)};
+  im.onerror=function(){cb(null)};im.src=src}
+function sendReceipt(id){
+  var e=S.lent.filter(function(x){return x.id===id})[0],m=function(t){var el=$("lm");if(el)el.textContent=t};if(!e)return;
+  m("Preparing the receipt…");
+  rcGet(e.rid,function(v){
+    if(!v){m("Couldn’t find the receipt photo.");return}
+    highlightImage(v,(e.items||[]).map(function(x){return x.b}).filter(Boolean),e.who+": "+rm(e.amt),function(blob){
+      if(!blob){m("Couldn’t find the receipt photo.");return}
+      var name=(e.who+"-RM"+e.amt.toFixed(2)+(e.shop?"-"+e.shop:"")+".jpg").replace(/[^A-Za-z0-9._-]+/g,"_"),file=null;
+      try{file=new File([blob],name,{type:"image/jpeg"})}catch(x){}
+      var txt=LANG==="ms"?"Hai "+e.who+", ini resit"+(e.shop?" dari "+e.shop:"")+". Bahagian anda ialah "+rm(e.amt)+". Terima kasih!":"Hi "+e.who+", here is the receipt"+(e.shop?" from "+e.shop:"")+". Your share is "+rm(e.amt)+". Thanks!";
+      if(file&&navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:name,text:txt}).then(function(){m("Shared.")},function(er){m(er&&er.name==="AbortError"?"":"Couldn’t share the file.")});return}
+      var u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);if(a.parentNode)a.parentNode.removeChild(a)},1000);
+      m("Sharing isn’t available here, so the receipt was saved. Send the file from your downloads.")})})}
 function scanHtml(){
   if(!scan)return "";
   if(scan.err)return '<div class="card"><div class="tip bad">'+esc(scan.err)+'</div><button class="btn g w" id="rcx">Try again</button></div>';
@@ -302,7 +365,9 @@ function scanHtml(){
   return '<div class="card"><h2>Check this receipt</h2><div class="flex mb"><img class="thumb" src="'+scan.img+'" alt="Receipt photo"><div class="tip" style="flex:1;margin:0;min-width:160px">'+esc(scan.msg||"")+'</div></div>'+
   '<label>Shop<input id="rsh" value="'+esc(scan.payee||"")+'"></label><label>Total (RM)<input id="ram" type="number" min="0" step="0.01" inputmode="decimal" value="'+(scan.amt>0?scan.amt.toFixed(2):"")+'"></label><label>Date<input id="rdt" type="date" value="'+scan.date+'"></label>'+
   '<label>Category<select id="rct">'+catSelS(scan.cat)+'</select></label><label>Paid by<select id="rwh">'+S.names.map(function(n,k){return '<option value="'+k+'">'+esc(n)+'</option>'}).join("")+'</select></label><label>Items (optional)<input id="rnt" value="'+esc(scan.raw||"")+'"></label>'+
-  '<div id="rer" class="neg mb" role="alert"></div><div style="display:flex;gap:10px"><button class="btn g" id="rcx" style="flex:1">Cancel</button><button class="btn" id="rsv" style="flex:2">Save with receipt</button></div></div>'}
+  '<div class="sec" style="margin:16px 2px 8px">Buying for a friend? Split the bill</div>'+(scan.items&&scan.items.length?'<p class="mu" style="margin-top:0">Tick the items bought for someone else.</p>'+scan.items.map(function(x,i){return '<label class="chk"><input type="checkbox" data-it="'+i+'"><span>'+esc(x.n)+' <b>'+rm(x.a)+'</b></span></label>'}).join(""):'')+
+  '<datalist id="lenders2">'+lpeople().map(function(p){return '<option value="'+esc(p.name)+'">'}).join("")+dpeople().map(function(p){return '<option value="'+esc(p.name)+'">'}).join("")+'</datalist><label>Friend’s name<input id="rfn" list="lenders2"></label><label>Friend’s part (RM)<input id="rfa" type="number" min="0" step="0.01" inputmode="decimal"></label><p class="mu" id="rmine" style="margin:0 0 4px"></p><p class="mu" style="font-size:12px;margin:0 0 12px">Includes their share of tax and service charge.</p>'+
+  '<div id="rer" class="neg mb" role="alert"></div><div style="display:flex;gap:10px"><button class="btn g" id="rcx" style="flex:1">Cancel</button><button class="btn" id="rsv" style="flex:2">Save with receipt</button></div><button class="btn g w" id="rsvs" style="margin-top:10px">Save and send receipt</button></div>'}
 function scanCard(){
   if(scan)return scanHtml();
   return '<div class="card" style="text-align:center"><h2>Scan a receipt</h2><p class="mu" style="margin-top:0">Take a photo of the receipt. I read the shop, total and date, and keep the photo with the entry.</p><button class="btn w" id="rcb">Open camera</button><button class="lnk" id="rpb" style="margin-top:12px">Choose a photo instead</button><input type="file" id="rcam" accept="image/*" capture="environment" class="hide"><input type="file" id="rpick" accept="image/*" class="hide"><p class="mu" style="margin:12px 0 0;font-size:12px">The reader downloads the first time, so you need internet. Always check the total before saving.</p></div>'}
@@ -336,7 +401,7 @@ function manualCard(){
   '<label>Amount (RM)<input id="am" type="number" min="0" step="0.01" inputmode="decimal"></label>'+
   (kind==="debt"?
     '<label>Who did you borrow from?<input id="py" list="lenders" placeholder="e.g. Ali, Mak, bank"></label><label>Date borrowed<input id="dt" type="date" value="'+iso(new Date())+'"></label><label>Due date (optional)<input id="du" type="date"></label><label>Note (optional)<input id="nt"></label>'
-  :'<label>Category<select id="ct">'+(kind==="exp"?catSelS(pre.cat):opts(INC))+'</select></label>'+
+  :'<label>Category<select id="ct">'+(kind==="exp"?catSelS(pre.cat):optsS(INC,pre.cat))+'</select></label>'+
   '<label>Paid by / received by<select id="wh">'+S.names.map(function(n,k){return '<option value="'+k+'">'+esc(n)+'</option>'}).join("")+'</select></label>'+
   '<label>Shop or person<input id="py" list="lenders" value="'+esc(pre.py||"")+'"></label><label>Date<input id="dt" type="date" value="'+iso(new Date())+'"></label><label>Note<input id="nt"></label>'+
   (kind==="exp"?'<p class="mu" style="margin-top:0">To pay back a debt, choose the category “Debt repayment (borrowed money)” and enter who you paid. It reduces what you owe them.</p>':''))+
@@ -349,7 +414,7 @@ function add(){
   else body=manualCard();
   return '<div class="top"><h1>Add</h1></div>'+seg+body}
 function guess(s){var l=s.toLowerCase();if(/hutang|repay|pay back|paid back|bayar balik|bayar hutang/.test(l))return "Debt repayment (borrowed money)";for(var i=0;i<KW.length;i++)if(KW[i][0].test(l))return KW[i][1];return "Other"}
-var INCK=[[/gaji|salary|payroll|wages/,"Salary"],[/bonus/,"Bonus"],[/dividend|interest|faedah|hibah|profit payment/,"Dividend / interest"],[/rental|rent received|sewa diterima/,"Rental income"],[/allowance|elaun|stipend|bantuan|\bstr\b|\bbsh\b/,"Allowance"],[/freelance|invoice|client|commission/,"Side income / freelance"]];
+var INCK=[[/paid you back|pay you back|repaid me|returned my|share of the bill|split the bill|ganti/,"Paid back by friend"],[/gaji|salary|payroll|wages/,"Salary"],[/bonus/,"Bonus"],[/dividend|interest|faedah|hibah|profit payment/,"Dividend / interest"],[/rental|rent received|sewa diterima/,"Rental income"],[/allowance|elaun|stipend|bantuan|\bstr\b|\bbsh\b/,"Allowance"],[/freelance|invoice|client|commission/,"Side income / freelance"]];
 var BANKS=[[/maybank|\bmae\b|m2u/,"Maybank"],[/cimb/,"CIMB"],[/\brhb\b/,"RHB"],[/public ?bank|\bpbe\b/,"Public Bank"],[/hong leong|\bhlb\b/,"Hong Leong"],[/ambank/,"AmBank"],[/bank islam/,"Bank Islam"],[/\bbsn\b/,"BSN"],[/\buob\b/,"UOB"],[/ocbc/,"OCBC"],[/touch ?'?n ?go|\btng\b/,"TnG eWallet"],[/grabpay/,"GrabPay"],[/shopeepay/,"ShopeePay"],[/boost/,"Boost"],[/gxbank|\bgx\b/,"GXBank"],[/aeon bank/,"AEON Bank"]];
 var METH=[[/duitnow/,"DuitNow"],[/\bqr\b/,"QR"],[/fpx|online banking/,"FPX"],[/\batm\b|cash withdrawal/,"ATM"],[/visa|mastercard|\bpos\b|card/,"Card"],[/transfer|ibg|giro/,"Transfer"],[/reload/,"Reload"]];
 function pick(t,l){for(var i=0;i<t.length;i++)if(t[i][0].test(l))return t[i][1];return ""}
@@ -363,7 +428,7 @@ function interpret(raw){
   if(dm){var y=+dm[3];if(y<100)y+=2000;var dd=new Date(y,+dm[2]-1,+dm[1]);if(!isNaN(dd))d=dd}
   else if(/yesterday|semalam/.test(l))d.setDate(d.getDate()-1);
   var date=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-  var inc=/received|credited|diterima|\bcr\b|salary|gaji|refund|cashback|rebate|deposit|transfer from|duitnow from|dividend|bonus|payroll/.test(l);
+  var inc=/received|credited|diterima|\bcr\b|salary|gaji|refund|cashback|rebate|deposit|transfer from|duitnow from|dividend|bonus|payroll|paid you back|pay you back|repaid me|returned my/.test(l);
   var X="([A-Za-z0-9&'.\\-\\/ ]{2,40}?)(?=\\s+(?:on|via|ref|using|for|dated|bal|balance|successful|account|a\\/c|semalam|yesterday|today)\\b|\\s+(?:rm|myr)|\\s+\\d|[.,;:]|$)";
   var rx=new RegExp((inc?"(?:\\bfrom\\b|\\bdari\\b)":"(?:\\bto\\b|\\bat\\b|@|\\bkepada\\b|\\bdi\\b|\\bpos\\b|\\bpurchase\\b)")+"\\s+"+X,"i");
   var pm=raw.match(rx),payee=pm?pm[1].trim():"";if(!payee){var rb=raw.match(new RegExp("(?:pay(?:ing)? back|paid back|repa(?:y|id)|bayar balik|bayar hutang(?: kepada)?)\\s+(?:to\\s+)?"+X,"i"));if(rb)payee=rb[1].trim()}
@@ -391,7 +456,7 @@ function ingest(t){
     var same=S.tx.concat(items).some(function(y){return y.raw===r.raw&&y.date===r.date&&y.amt===r.amt});
     if(same){dup++;return}
     r.id=String(n+items.length);delete r.review;items.push(r)});
-  items.forEach(function(r){applyDebt(r);S.tx.unshift(r)});cleanup();
+  items.forEach(function(r){applyDebt(r);applyRecv(r);if(r.cat==="Paid back by friend")r.xfer=true;S.tx.unshift(r)});cleanup();
   if(items.length&&!save()){S.tx=S.tx.slice(items.length);return null}
   done={items:items,dup:dup,bad:bad};return done}
 function runIngest(){
@@ -408,9 +473,10 @@ function editTx(id){
 function copy(txt,cb){
   var no=function(){var a=document.createElement("textarea");a.value=txt;a.style.cssText="position:fixed;opacity:0";document.body.appendChild(a);a.select();var r=false;try{r=document.execCommand("copy")}catch(e){}document.body.removeChild(a);cb(r)};
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){cb(true)},no);else no()}
-document.addEventListener("change",function(e){var t=e.target;if(t.dataset&&t.dataset.pc!==undefined){var p=pend[+t.dataset.pc];p.cat=t.value;p.review=false;p.purpose=mkp(p.cat,p.payee,p.type==="inc",p.raw);render()}});
+document.addEventListener("input",function(e){var t=e.target;if(t&&(t.id==="rfa"||t.id==="ram"))updateMine()});
+document.addEventListener("change",function(e){var t=e.target;if(t.dataset&&t.dataset.it!==undefined){splitCalc();return}if(t.dataset&&t.dataset.pc!==undefined){var p=pend[+t.dataset.pc];p.cat=t.value;p.review=false;p.purpose=mkp(p.cat,p.payee,p.type==="inc",p.raw);render()}});
 function stats(){
-  var ms={};S.tx.forEach(function(t){var k=t.date.slice(0,7),o=ms[k]||(ms[k]={i:0,e:0,n:0});if(t.type==="inc")o.i+=t.amt;else{o.e+=t.amt;if(TYPE[t.cat]==="need")o.n+=t.amt}});
+  var ms={};S.tx.forEach(function(t){if(t.xfer)return;var k=t.date.slice(0,7),o=ms[k]||(ms[k]={i:0,e:0,n:0});if(t.type==="inc")o.i+=t.amt;else{o.e+=t.amt;if(TYPE[t.cat]==="need")o.n+=t.amt}});
   var k=Object.keys(ms),c=Math.max(k.length,1),r={inc:0,exp:0,need:0};k.forEach(function(x){r.inc+=ms[x].i;r.exp+=ms[x].e;r.need+=ms[x].n});
   return {inc:r.inc/c,exp:r.exp/c,need:r.need/c}}
 function check(){
@@ -473,7 +539,7 @@ function hist(){
     bal+=t.type==="inc"?t.amt:-t.amt;if(t.type==="inc")cr+=t.amt;else dr+=t.amt;
     var ds=t.purpose||t.payee||short(t.cat),n=function(v){return rm(v).slice(3)};
     out.push([t.date,ds,t.type==="exp"?t.amt:"",t.type==="inc"?t.amt:"",bal,t.cat,S.names[t.who]||"",t.raw||t.note||""]);
-    tr+='<tr data-s="'+esc((ds+" "+t.cat+" "+(t.raw||"")+" "+(t.ch||"")).toLowerCase())+'"><td>'+t.date.slice(8)+"/"+t.date.slice(5,7)+'</td><td><b>'+esc(ds)+'</b>'+(t.cat==="Other"?'<span class="chip">Check category</span>':'')+'<div class="mu">'+esc(short(t.cat))+' · '+esc(S.names[t.who]||"")+(t.ch?' · '+esc(t.ch):'')+'</div>'+(t.raw?'<div class="mu" style="font-size:12px">“'+esc(t.raw.slice(0,90))+'”</div>':'')+''+(t.rc?'<button class="lnk" data-rc="'+t.id+'">Receipt</button> ':'')+'<button class="lnk" data-ed="'+t.id+'">Edit</button> <button class="lnk" data-del="'+t.id+'">Delete</button></td><td class="n neg">'+(t.type==="exp"?n(t.amt):"")+'</td><td class="n pos">'+(t.type==="inc"?n(t.amt):"")+'</td><td class="n">'+n(bal)+'</td></tr>'});
+    tr+='<tr data-s="'+esc((ds+" "+t.cat+" "+(t.raw||"")+" "+(t.ch||"")).toLowerCase())+'"><td>'+t.date.slice(8)+"/"+t.date.slice(5,7)+'</td><td><b>'+esc(ds)+'</b>'+(t.cat==="Other"?'<span class="chip">Check category</span>':'')+'<div class="mu">'+esc(short(t.cat))+' · '+esc(S.names[t.who]||"")+(t.ch?' · '+esc(t.ch):'')+'</div>'+(t.raw?'<div class="mu" style="font-size:12px">“'+esc(t.raw.slice(0,90))+'”</div>':'')+''+(t.rc?'<button class="lnk" data-rc="'+(t.rcId||t.id)+'">Receipt</button> ':'')+'<button class="lnk" data-ed="'+t.id+'">Edit</button> <button class="lnk" data-del="'+t.id+'">Delete</button></td><td class="n neg">'+(t.type==="exp"?n(t.amt):"")+'</td><td class="n pos">'+(t.type==="inc"?n(t.amt):"")+'</td><td class="n">'+n(bal)+'</td></tr>'});
   rows=out;var n2=function(v){return rm(v).slice(3)};
   return '<div class="top"><h1>Record</h1><div><button class="lnk" id="mp">‹</button> <b>'+mlabel()+'</b> <button class="lnk" id="mn">›</button></div></div>'+
   '<div class="card"><div class="row"><div><div class="mu">Closing balance</div><div class="big '+(bal<0?'neg':'')+'">'+rm(bal)+'</div></div><button class="btn g" id="ob">Starting balance</button></div></div>'+
@@ -483,7 +549,7 @@ function hist(){
   (tr||'<tr><td></td><td class="mu">No entries this month.</td><td></td><td></td><td></td></tr>')+
   '<tr class="sum"><td></td><td>Total and closing balance</td><td class="n">'+n2(dr)+'</td><td class="n">'+n2(cr)+'</td><td class="n">'+n2(bal)+'</td></tr></tbody></table></div></div>'+
   '<div class="seg" style="grid-template-columns:1fr 1fr"><button data-cs="0" aria-pressed="'+!csvAll+'">This month</button><button data-cs="1" aria-pressed="'+csvAll+'">All records</button></div><div style="display:flex;gap:10px"><button class="btn" id="csvs" style="flex:1">Save CSV</button><button class="btn g" id="csvh" style="flex:1">Send CSV</button></div><p class="mu" id="cm"></p>'}
-function render(){
+function render(){S.lent=S.lent||[];S.debts=S.debts||[];
   var v={home:home,add:add,check:check,hist:hist,debt:debts}[view]();
   $("app").innerHTML=v;
   var IC={"home": "<rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"2\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"2\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"2\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"2\"/>", "add": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 8v8M8 12h8\"/>", "check": "<path d=\"M12 3a6 6 0 0 0-3 11v3h6v-3a6 6 0 0 0-3-11z\"/><path d=\"M10 20h4\"/>", "hist": "<path d=\"M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01\"/>", "debt": "<path d=\"M3 7h15a3 3 0 0 1 3 3v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z\"/><path d=\"M3 7l12-3v3\"/>"};$("nav").innerHTML=[["home","Dashboard"],["add","Add"],["check","Advice"],["hist","Record"],["debt","Debts"]].map(function(n){return '<button data-v="'+n[0]+'"'+(view===n[0]?' aria-current="page"':'')+'><svg viewBox="0 0 24 24" aria-hidden="true">'+IC[n[0]]+'</svg>'+n[1]+'</button>'}).join("");
@@ -500,7 +566,9 @@ function render(){
       S.debts.unshift({id:String(Date.now()),who:w,amt:a,date:$("dt").value||iso(new Date()),due:$("du").value||"",note:$("nt").value.trim()});
       if(!save()){S.debts.shift();$("er").textContent="Could not save on this device.";return}
       kind="exp";view="debt";render();return}
-    var pe=$("py").value.trim(),ct=$("ct").value,tx0={id:String(Date.now()),type:kind,amt:a,cat:ct,who:+$("wh").value,payee:pe,purpose:mkp(ct,pe,kind==="inc",pe),raw:$("nt").value.trim(),note:"",date:$("dt").value};applyDebt(tx0);S.tx.unshift(tx0);cleanup();
+    var pe=$("py").value.trim(),ct=$("ct").value,tx0={id:String(Date.now()),type:kind,amt:a,cat:ct,who:+$("wh").value,payee:pe,purpose:mkp(ct,pe,kind==="inc",pe),raw:$("nt").value.trim(),note:"",date:$("dt").value};if(kind==="inc"&&ct==="Paid back by friend"){tx0.xfer=true;applyRecv(tx0)}
+    if(kind==="exp"&&ct==="Paid for a friend (to be repaid)"){if(!pe){$("er").textContent="Enter your friend’s name in Shop or person.";return}tx0.xfer=true;S.lent.unshift({id:String(Date.now()+1),txid:tx0.id,who:pe,amt:a,date:tx0.date,shop:"",rid:"",items:[]})}
+    applyDebt(tx0);S.tx.unshift(tx0);cleanup();
     if(!save()){S.tx.shift();$("er").textContent="Could not save on this device.";return}
     ym=$("dt").value.slice(0,7);view="home";render()});
   q("go",risk);q("ask",ask);q("inst",function(){if(!inst)return;inst.prompt();inst.userChoice.then(function(){inst=null;render()})});
@@ -510,22 +578,25 @@ function render(){
   q("csvh",function(){sendFile(csvFile(),function(m){$("cm").textContent=m})});
   q("rcb",function(){$("rcam").click()});q("rpb",function(){$("rpick").click()});
   ["rcam","rpick"].forEach(function(i){var el=$(i);if(el)el.onchange=function(){handleReceipt(this.files&&this.files[0])}});
-  q("rcx",function(){scan=null;render()});q("rsv",saveReceipt);
+  q("rcx",function(){scan=null;render()});q("rsv",function(){saveReceipt(false)});q("rsvs",function(){saveReceipt(true)});
   q("ob",function(){var v=prompt("Balance in your account before you started using this app (RM)",S.open||0);if(v===null)return;var n=parseFloat(String(v).replace(/,/g,""));if(!isNaN(n)){S.open=n;save();render()}});
   if($("fq"))$("fq").oninput=function(){var v=this.value.toLowerCase();[].forEach.call(document.querySelectorAll("tr[data-s]"),function(r){r.classList.toggle("hide",r.dataset.s.indexOf(v)<0)})};
   q("ps",function(){var n=Date.now(),mx="";pend.forEach(function(p,i){p.id=String(n+i);delete p.review;if(p.date>mx)mx=p.date;S.tx.unshift(p)});pend=[];save();ym=mx.slice(0,7);view="hist";render()});
 }
 document.addEventListener("click",function(e){
-  var t=e.target.closest("[data-v],[data-k],[data-del],[data-chk],[data-ed],[data-pr],[data-keep],[data-dadd],[data-dpay],[data-ddel],[data-am],[data-cs],[data-rc]");if(!t)return;if(t.dataset.pr!==undefined){pend.splice(+t.dataset.pr,1);render();return}if(t.dataset.ed){editTx(t.dataset.ed);return}
+  var t=e.target.closest("[data-v],[data-k],[data-del],[data-chk],[data-ed],[data-pr],[data-keep],[data-dadd],[data-dpay],[data-ddel],[data-am],[data-cs],[data-rc],[data-send],[data-lpaid],[data-ldel]");if(!t)return;if(t.dataset.pr!==undefined){pend.splice(+t.dataset.pr,1);render();return}if(t.dataset.ed){editTx(t.dataset.ed);return}
   if(t.dataset.am){amode=t.dataset.am;if(kind==="debt")kind="exp";pre={};scan=null;render();return}
   if(t.dataset.cs){csvAll=t.dataset.cs==="1";render();return}
   if(t.dataset.rc){rcGet(t.dataset.rc,function(v){$("ed").innerHTML='<h2>Receipt</h2>'+(v?'<img src="'+v+'" alt="Receipt photo" style="width:100%;border-radius:12px;margin-bottom:12px">':'<p class="mu">The photo isn’t on this device any more.</p>')+'<div style="text-align:right"><button class="btn g" id="rcc">Close</button></div>';$("ed").showModal();$("rcc").onclick=function(){$("ed").close()}});return}
+  if(t.dataset.send){sendReceipt(t.dataset.send);return}
+  if(t.dataset.lpaid){var lp=lpeople().filter(function(x){return x.key===t.dataset.lpaid})[0];kind="inc";amode="manual";pre={cat:"Paid back by friend",py:lp?lp.name:""};view="add";render();return}
+  if(t.dataset.ldel){if(confirm("Remove this from the list? Entries already in Record stay.")){S.lent=S.lent.filter(function(x){return dk(x.who)!==t.dataset.ldel});S.tx.forEach(function(x){if(x.lentKey===t.dataset.ldel){delete x.lentKey;delete x.lentApplied}});save();render()}return}
   if(t.dataset.dadd){kind="debt";view="add";pre={};render();return}
   if(t.dataset.dpay){var pp=dpeople().filter(function(x){return x.key===t.dataset.dpay})[0];kind="exp";pre={cat:"Debt repayment (borrowed money)",py:pp?pp.name:""};view="add";render();return}
   if(t.dataset.ddel){if(confirm("Delete this debt from the list? Expenses already in Record stay.")){S.debts=S.debts.filter(function(x){return dk(x.who)!==t.dataset.ddel});S.tx.forEach(function(x){if(x.debtKey===t.dataset.ddel){delete x.debtKey;delete x.debtApplied}});save();render()}return}if(t.dataset.keep){var kx=S.tx.filter(function(y){return y.id===t.dataset.keep})[0];if(kx){kx.keep=true;save();render()}return}
   if(t.dataset.v){view=t.dataset.v;pre={};done=null;scan=null;render()}
   else if(t.dataset.k){kind=t.dataset.k;amode="manual";render()}
-  else if(t.dataset.del){if(confirm("Delete this entry?")){S.tx=S.tx.filter(function(x){return x.id!==t.dataset.del});rcDel(t.dataset.del);save();render()}}
+  else if(t.dataset.del){if(confirm("Delete this entry?")){var dx=S.tx.filter(function(x){return x.id===t.dataset.del})[0];S.tx=S.tx.filter(function(x){return x.id!==t.dataset.del});if(dx){S.lent=S.lent.filter(function(l){return l.txid!==dx.id});if(dx.rcId)rcRelease(dx.rcId);else rcDel(dx.id)}save();render()}}
   else if(t.dataset.chk){var x=S.tx.filter(function(y){return y.id===t.dataset.chk})[0];pre={d:(x.raw||x.purpose||x.payee||"")+" "+rm(x.amt)};view="check";render();scan()}
 });
 var DICT=`Dashboard ⇒ Papan Pemuka
@@ -925,7 +996,32 @@ Spending split by needs, wants and savings ⇒ Pecahan perbelanjaan mengikut kep
 Income and spending for the last {} months ⇒ Pendapatan dan perbelanjaan {1} bulan lepas
 Spent ⇒ Dibelanjakan
 Saved ⇒ Disimpan
-Change ⇒ Ubah`;
+Change ⇒ Ubah
+Buying for a friend? Split the bill ⇒ Beli untuk rakan? Bahagi bil
+Tick the items bought for someone else. ⇒ Tandakan item yang dibeli untuk orang lain.
+Friend’s name ⇒ Nama rakan
+Friend’s part (RM) ⇒ Bahagian rakan (RM)
+Includes their share of tax and service charge. ⇒ Termasuk bahagian cukai dan caj perkhidmatan mereka.
+Your part: {} ⇒ Bahagian anda: {1}
+Save and send receipt ⇒ Simpan dan hantar resit
+Enter your friend’s name. ⇒ Masukkan nama rakan anda.
+Enter your friend’s name and their part first. ⇒ Masukkan nama rakan anda dan bahagian mereka dahulu.
+Your friend’s part can’t be more than the total. ⇒ Bahagian rakan anda tidak boleh melebihi jumlah.
+Enter your friend’s name in Shop or person. ⇒ Masukkan nama rakan anda dalam Kedai atau orang.
+Owed to you ⇒ Terhutang kepada anda
+Friends owe you ⇒ Rakan berhutang dengan anda
+Lent {} · Paid back {} ⇒ Dipinjamkan {1} · Dibayar balik {2}
+Send receipt ⇒ Hantar resit
+Got paid ⇒ Sudah dibayar
+Remove this from the list? ⇒ Alih keluar ini daripada senarai?
+Entries already in Record stay. ⇒ Entri yang sudah ada dalam Rekod akan kekal.
+Paid for a friend ⇒ Dibayar untuk rakan
+Paid for a friend (to be repaid) ⇒ Dibayar untuk rakan (akan dibayar balik)
+Paid back by friend ⇒ Dibayar balik oleh rakan
+Preparing the receipt… ⇒ Menyediakan resit…
+Couldn’t find the receipt photo. ⇒ Foto resit tidak ditemui.
+Sharing isn’t available here, so the receipt was saved. ⇒ Perkongsian tidak tersedia di sini, jadi resit disimpan.
+Send the file from your downloads. ⇒ Hantar fail itu dari muat turun anda.`;
 var LANG="en",MAP={},RULES=[];
 var NUMRX=/RM\s?-?\d[\d,]*(?:\.\d+)?|\d+(?:\.\d+)?/g;
 function nrm(t){var v=[];return {k:t.replace(NUMRX,function(m){v.push(m);return "{}"}),v:v}}
@@ -940,6 +1036,7 @@ RULES.push([/^(Paid|Received) (RM\s?-?[\d,.]+)(?: (to|from) (.+?))?(?: via (.+?)
 RULES.push([/^Saved (.+\.csv) to your downloads\.$/,function(m){return "Disimpan "+m[1]+" ke muat turun anda."}]);
 RULES.push([/^still owed to (\d+) (?:people|person)(?: · next due (\S+) \((.+)\))?$/,function(m){return "masih terhutang kepada "+m[1]+" orang"+(m[2]?" · tarikh bayaran seterusnya "+m[2]+" ("+m[3]+")":"")}]);
 RULES.push([/^Your biggest single expense was (RM\s?-?[\d,.]+) \((.+)\)\. Was it planned\?$/,function(m){return "Perbelanjaan tunggal terbesar anda ialah "+m[1]+" ("+trCore(m[2])+"). Adakah ia dirancang?"}]);
+RULES.push([/^Paid for (.+?)(?: at (.+))?$/,function(m){return "Dibayar untuk "+m[1]+(m[2]?" di "+m[2]:"")}]);
 function trCore(s){
   var n=nrm(s),r=MAP[n.k];if(r!=null)return fill(r,n.v);
   for(var i=0;i<RULES.length;i++){var m=s.match(RULES[i][0]);if(m){var o=RULES[i][1](m);if(o!=null)return o}}
