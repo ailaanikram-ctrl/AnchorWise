@@ -69,6 +69,7 @@ a{color:var(--ac);font-weight:600}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}.badge{background:var(--tint);color:var(--ac);padding:5px 12px;border-radius:999px;font-weight:600;font-size:13px}
 .ins{padding:11px 0;border-bottom:1px solid var(--ln)}.ins:last-child{border:0}.ins b{font-size:14px}
 .thumb{width:84px;height:84px;object-fit:cover;border-radius:12px;flex:none}
+.pchips{display:flex;flex-wrap:wrap;gap:8px}.pchips button{border:2px solid var(--ln);background:var(--sf);border-radius:999px;padding:6px 12px;font-weight:600;font-size:13px;cursor:pointer;display:inline-flex;align-items:center}.pchips button[aria-pressed="true"]{background:var(--tint)}
 summary{cursor:pointer;font-weight:600;padding:10px 0}details{margin-bottom:12px}
 dialog{border:0;border-radius:20px;background:var(--sf);color:var(--ink);width:min(420px,calc(100% - 24px));padding:20px}dialog::backdrop{background:rgba(0,0,0,.45)}
 </style>
@@ -340,23 +341,23 @@ function fileToCanvas(file,cb){
 function loadOcr(cb){
   if(window.Tesseract)return cb(true);
   var s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";s.onload=function(){cb(!!window.Tesseract)};s.onerror=function(){cb(false)};document.head.appendChild(s)}
-function blankScan(img,msg){return {img:img,msg:msg,amt:0,date:iso(new Date()),payee:"",cat:"Other",raw:"",items:[],people:[],assign:{}}}
+function blankScan(img,msg,c){return {img:img,msg:msg,amt:0,date:iso(new Date()),payee:"",cat:"Other",raw:"",items:[],w:c?c.width:0,h:c?c.height:0,persons:newPersons(),strokes:[],cur:0,marker:true,tool:"mark",mw:32}}
 function handleReceipt(file){
   if(!file)return;
   fileToCanvas(file,function(c){
     if(!c){scan={err:"That file couldn’t be read as an image."};render();return}
     var img=c.toDataURL("image/jpeg",.72);scan={busy:true,img:img,msg:"Preparing the photo…"};render();
     loadOcr(function(ok){
-      if(!ok){scan=blankScan(img,"I couldn’t load the receipt reader. It needs internet the first time. Fill in the details and the photo is still saved.");render();return}
+      if(!ok){scan=blankScan(img,"I couldn’t load the receipt reader. It needs internet the first time. Fill in the details and the photo is still saved.",c);render();return}
       var pc=c;try{pc=prepCanvas(c)}catch(e){}
       runOcr(pc,function(m){var e=$("rsp");if(e&&m&&m.progress!=null)e.textContent=Math.round(m.progress*100)+"% · "+(m.status||"")},function(err,res){
-        if(err||!res||!res.data){scan=blankScan(img,"I couldn’t read this photo. Fill in the details and the photo is still saved.");render();return}
+        if(err||!res||!res.data){scan=blankScan(img,"I couldn’t read this photo. Fill in the details and the photo is still saved.",c);render();return}
         var L=(res.data.lines||[]).filter(function(l){return l.text&&l.text.trim()}),txt=L.length?L.map(function(l){return l.text.trim()}).join("\n"):(res.data.text||"");
         var p=parseReceipt(txt);p.items.forEach(function(it){var l=L.length?L[it.li]:null;it.box=l&&l.bbox?[l.bbox.x0,l.bbox.y0,l.bbox.x1,l.bbox.y1]:null});
         var msg=p.amt>0?"Check the details below, then save.":"I couldn’t find the total. Please enter it.";
         if(p.retailer)msg+=" Looks like "+p.retailer+".";
         if(p.amt>0&&p.items.length&&!p.check.ok)msg+=" The items add up to "+rm(p.check.itemsSum)+" but the total is "+rm(p.amt)+". Please check.";
-        scan={img:img,w:c.width,h:c.height,amt:p.amt,date:p.date,payee:p.payee,cat:p.cat,raw:p.raw,items:p.items,retailer:p.retailer,text:txt,people:[],assign:{},msg:msg};render()})})})}
+        scan={img:img,w:c.width,h:c.height,amt:p.amt,date:p.date,payee:p.payee,cat:p.cat,raw:p.raw,items:p.items,retailer:p.retailer,text:txt,persons:newPersons(),strokes:[],cur:0,marker:true,tool:"mark",mw:markW(p.items),msg:msg};render()})})})}
 var PL={title:"Bill split",forLbl:"Amount for",store:"Store",date:"Date",total:"Receipt total",item:"Item",amount:"Amount",sub:"Items subtotal",tax:"Tax and service share",pay:"Amount to pay",made:"Made with AnchorWise",more:"more items",rcpt:"Receipt",share:"Your share of the bill"};
 var PM={title:"Pembahagian bil",forLbl:"Jumlah untuk",store:"Kedai",date:"Tarikh",total:"Jumlah resit",item:"Item",amount:"Jumlah",sub:"Jumlah kecil item",tax:"Bahagian cukai dan caj perkhidmatan",pay:"Jumlah perlu dibayar",made:"Dibuat dengan AnchorWise",more:"item lagi",rcpt:"Resit",share:"Bahagian anda daripada bil"};
 function pdfBytes(s){var b=new Uint8Array(s.length);for(var i=0;i<s.length;i++)b[i]=s.charCodeAt(i)&255;return b}
@@ -392,95 +393,138 @@ function makePdf(o){
   var xo=off;put("xref\n0 "+N+"\n0000000000 65535 f \n");for(i=1;i<N;i++)put(("0000000000"+xr[i]).slice(-10)+" 00000 n \n");
   put("trailer\n<< /Size "+N+" /Root 1 0 R >>\nstartxref\n"+xo+"\n%%EOF");
   var all=new Uint8Array(off),p=0;chunks.forEach(function(b){all.set(b,p);p+=b.length});return all}
+var NEON=["#39ff14","#ff2fd0","#00e5ff","#ffe600","#ff8a00"],rvim=null;
+function newPersons(){return [0,1,2,3,4].map(function(i){return {name:"Person "+(i+1),color:NEON[i],me:false}})}
+function markW(items){var h=(items||[]).filter(function(x){return x.box}).map(function(x){return x.box[3]-x.box[1]}).sort(function(a,b){return a-b});return h.length?Math.max(18,Math.min(70,Math.round(h[Math.floor(h.length/2)]*1.15))):32}
+function dseg(px,py,ax,ay,bx,by){var dx=bx-ax,dy=by-ay,l=dx*dx+dy*dy,t=l?Math.max(0,Math.min(1,((px-ax)*dx+(py-ay)*dy)/l)):0,cx=ax+t*dx,cy=ay+t*dy;return Math.sqrt((px-cx)*(px-cx)+(py-cy)*(py-cy))}
+function hit(st,x,y){var r=st.w/2,p=st.pts,i;if(p.length===1)return Math.sqrt((x-p[0][0])*(x-p[0][0])+(y-p[0][1])*(y-p[0][1]))<=r;for(i=1;i<p.length;i++)if(dseg(x,y,p[i-1][0],p[i-1][1],p[i][0],p[i][1])<=r)return true;return false}
+function cover(box,strokes,pi,from){var y=(box[1]+box[3])/2,x0=box[0]+(box[2]-box[0])*from,x1=box[2],n=24,c=0,i;for(i=0;i<n;i++){var x=x0+(x1-x0)*(i+.5)/n;if(strokes.some(function(s){return s.p===pi&&hit(s,x,y)}))c++}return c/n}
+function holders(box){var o=[];scan.persons.forEach(function(_,pi){if(Math.max(cover(box,scan.strokes,pi,0),cover(box,scan.strokes,pi,.7))>=.35)o.push(pi)});return o}
+function r2(v){return Math.round(v*100)/100}
 function scanSync(){
-  if(scan){scan.people=scan.people||[];scan.assign=scan.assign||{}}
-  if(!scan||!$("ram"))return;
+  if(!scan)return;scan.persons=scan.persons||newPersons();scan.strokes=scan.strokes||[];
+  if(!$("ram"))return;
   var g=function(i){var e=$(i);return e?e.value:""};
   scan.payee=g("rsh");scan.amt=parseFloat(g("ram"))||0;scan.date=g("rdt")||scan.date;scan.cat=g("rct")||scan.cat;scan.raw=g("rnt");scan.who=+g("rwh")||0;
-  scan.manual=scan.people.map(function(_,i){return g("rma"+i)})}
-function shares(){
-  var P=["me"].concat(scan.people.map(function(_,i){return "f"+i})),n=P.length,s={},items=scan.items||[],all=0,out={},tot=parseFloat($("ram")?$("ram").value:"")||scan.amt||0;
-  P.forEach(function(k){s[k]=0});
-  if(items.length){
-    items.forEach(function(x,i){all+=x.a;var k=(scan.assign||{})[i]||"me";if(k==="all")P.forEach(function(p){s[p]+=x.a/n});else if(s[k]!=null)s[k]+=x.a;else s.me+=x.a});
-    var base=tot>0?tot:all,ratio=all>0&&Math.abs(base-all)/all<.4?base/all:1;
-    P.forEach(function(k){out[k]=Math.round(s[k]*ratio*100)/100});
-    var sm=P.reduce(function(a,k){return a+out[k]},0);out.me=Math.round((out.me+(base-sm))*100)/100;
-    return {P:P,out:out,sub:s,tot:base}}
-  var fr=0;P.forEach(function(k,i){if(k!=="me"){var e=$("rma"+(i-1)),v=parseFloat(e?e.value:"")||0;out[k]=v;fr+=v}});out.me=Math.round((tot-fr)*100)/100;
-  return {P:P,out:out,sub:null,tot:tot}}
-function pname(k){return k==="me"?(S.names[0]||"Me"):scan.people[+k.slice(1)]}
-function splitSummary(){var sh=shares();return sh.P.map(function(k){return '<div class="row"><span>'+esc(pname(k))+'</span><b class="'+(sh.out[k]<0?'neg':'')+'">'+rm(sh.out[k])+'</b></div>'}).join("")}
+  scan.manual=scan.persons.map(function(_,i){return g("rma"+i)})}
+function hasBoxes(){return !!(scan&&scan.items&&scan.items.some(function(x){return x.box}))}
+function calcShares(){
+  var P=scan.persons,items=scan.items||[],per=P.map(function(){return {its:[],sub:0}}),all=0,tot=parseFloat($("ram")?$("ram").value:"")||scan.amt||0,i;
+  if(hasBoxes()){
+    items.forEach(function(x){all+=x.a;var who=x.box?holders(x.box):[];if(!who.length)return;var sh=x.a/who.length;who.forEach(function(p){per[p].sub+=sh;per[p].its.push({n:x.n+(who.length>1?" (shared)":""),a:r2(sh),b:x.box})})});
+    var base=tot>0?tot:all,ratio=all>0&&Math.abs(base-all)/all<.4?base/all:1,out=per.map(function(q,p){return P[p].me?0:r2(q.sub*ratio)}),mine=r2(base-out.reduce(function(a,b){return a+b},0));
+    return {per:per,out:out,mine:mine,tot:base,manual:false}}
+  var out2=P.map(function(_,p){var e=$("rma"+p),v=parseFloat(e?e.value:(scan.manual||[])[p])||0;return P[p].me?0:v});
+  return {per:per,out:out2,mine:r2(tot-out2.reduce(function(a,b){return a+b},0)),tot:tot,manual:true}}
+function splitSummary(){
+  var sh=calcShares(),P=scan.persons,rows=P.map(function(p,i){return (sh.per[i].sub>0||sh.out[i]>0||p.me&&sh.per[i].sub>0)?'<div class="row"><span><span class="dot" style="background:'+p.color+'"></span>'+esc(p.name)+(p.me?' ('+esc(S.names[0]||"Me")+')':'')+'</span><b>'+rm(p.me?sh.per[i].sub:sh.out[i])+'</b></div>':''}).join("");
+  return rows+'<div class="row"><span>'+(sh.manual?esc(S.names[0]||"Me"):"Not highlighted (mine)")+'</span><b class="'+(sh.mine<0?'neg':'')+'">'+rm(sh.mine)+'</b></div>'}
 function updateSplit(){var e=$("rsplit");if(e)e.innerHTML=splitSummary()}
-function peopleChange(){
-  scanSync();
-  scan.people=($("rpn").value||"").split(/[,;]+/).map(function(x){return x.trim()}).filter(function(x,i,a){return x&&a.indexOf(x)===i&&dk(x)!==dk(S.names[0])}).slice(0,8);
-  Object.keys(scan.assign||{}).forEach(function(k){var v=scan.assign[k];if(/^f\d+$/.test(v)&&+v.slice(1)>=scan.people.length)scan.assign[k]="me"});
-  render()}
+function drawMarks(g,list,sc){
+  g.globalCompositeOperation="multiply";
+  list.forEach(function(s){
+    if(s.b){g.fillStyle=s.c;g.fillRect(s.b[0]*sc-6,s.b[1]*sc-3,(s.b[2]-s.b[0])*sc+12,(s.b[3]-s.b[1])*sc+6);return}
+    if(!s.pts||!s.pts.length)return;g.strokeStyle=s.c;g.lineWidth=s.w*sc;g.lineCap="round";g.lineJoin="round";g.beginPath();g.moveTo(s.pts[0][0]*sc,s.pts[0][1]*sc);
+    if(s.pts.length===1)g.lineTo(s.pts[0][0]*sc+.01,s.pts[0][1]*sc);for(var i=1;i<s.pts.length;i++)g.lineTo(s.pts[i][0]*sc,s.pts[i][1]*sc);g.stroke()});
+  g.globalCompositeOperation="source-over"}
+function rvSize(){var cv=$("rvc");if(!cv||!rvim||!scan.w)return;var w=cv.parentNode.clientWidth||320;cv.width=w;cv.height=Math.round(w*scan.h/scan.w)}
+function rvDraw(){var cv=$("rvc");if(!cv||!rvim||!scan||!scan.w)return;var g=cv.getContext("2d"),sc=cv.width/scan.w;g.globalCompositeOperation="source-over";g.drawImage(rvim,0,0,cv.width,cv.height);drawMarks(g,scan.strokes.map(function(s){return {pts:s.pts,w:s.w,c:scan.persons[s.p].color}}),sc)}
+function rvErase(p){var n=scan.strokes.length,r=scan.mw*.8;scan.strokes=scan.strokes.filter(function(s){return !s.pts.some(function(q){return Math.abs(q[0]-p[0])<r&&Math.abs(q[1]-p[1])<r})});if(scan.strokes.length!==n){rvDraw();updateSplit()}}
+function rvInit(){
+  var cv=$("rvc");if(!cv||!scan||!scan.img||!scan.w)return;
+  var im=new Image(),down=false,cur=null,pt=function(e){var r=cv.getBoundingClientRect();return [(e.clientX-r.left)/r.width*scan.w,(e.clientY-r.top)/r.height*scan.h]};
+  im.onload=function(){rvim=im;rvSize();rvDraw()};im.src=scan.img;
+  cv.onpointerdown=function(e){if(!scan.marker)return;e.preventDefault();down=true;try{cv.setPointerCapture(e.pointerId)}catch(x){}var p=pt(e);if(scan.tool==="erase"){rvErase(p);return}cur={p:scan.cur,pts:[p],w:scan.mw};scan.strokes.push(cur);rvDraw()};
+  cv.onpointermove=function(e){if(!down)return;e.preventDefault();var p=pt(e);if(scan.tool==="erase"){rvErase(p);return}var l=cur.pts[cur.pts.length-1];if(Math.abs(p[0]-l[0])+Math.abs(p[1]-l[1])>2){cur.pts.push(p);rvDraw()}};
+  var up=function(){if(!down)return;down=false;cur=null;updateSplit()};cv.onpointerup=up;cv.onpointercancel=up}
 function saveReceipt(send){
   scanSync();
   var er=function(t){var e=$("rer");if(e)e.textContent=t},a=scan.amt;
   if(!(a>0)){er("Enter the total from the receipt.");return}
-  var sh=shares(),dt=scan.date||iso(new Date()),pe=scan.payee,ct=scan.cat,nt=scan.raw,fr=scan.people,n=sh.P.length;
-  if(send&&!fr.length){er("Add the people you are splitting with first.");return}
-  if(sh.out.me<-0.004){er("The shares add up to more than the total.");return}
+  var sh=calcShares(),dt=scan.date||iso(new Date()),pe=scan.payee,ct=scan.cat,nt=scan.raw,P=scan.persons;
+  var fr=[];P.forEach(function(p,i){if(!p.me&&sh.out[i]>0)fr.push(i)});
+  if(send&&!fr.length){er("Highlight someone’s items first.");return}
+  if(sh.mine<-0.004){er("The shares add up to more than the total.");return}
   var rid=String(Date.now());
   rcPut(rid,scan.img,function(ok){
-    var now=Date.now(),n0=S.tx.length,l0=S.lent.length,mine=sh.out.me,lids=[],t0;
+    var now=Date.now(),n0=S.tx.length,l0=S.lent.length,lids=[],t0,mine=sh.mine;
     if(mine>0.004){t0={id:String(now),type:"exp",amt:mine,cat:ct,who:scan.who||0,payee:pe,purpose:mkp(ct,pe,false,nt||pe),raw:nt,ch:"",note:"",date:dt};if(ok){t0.rc=true;t0.rcId=rid}applyDebt(t0);S.tx.unshift(t0)}
-    fr.forEach(function(name,fi){
-      var amt=sh.out["f"+fi];if(!(amt>0))return;
-      var its=[];(scan.items||[]).forEach(function(x,i){var k=(scan.assign||{})[i]||"me";if(k==="f"+fi)its.push({n:x.n,a:Math.round(x.a*100)/100,b:x.box||null});else if(k==="all")its.push({n:x.n+" (shared)",a:Math.round(x.a/n*100)/100,b:x.box||null})});
-      var t1={id:String(now+1+fi*2),type:"exp",amt:amt,cat:"Paid for a friend (to be repaid)",who:scan.who||0,payee:name,purpose:"Paid for "+name+(pe?" at "+pe:""),raw:nt,ch:"",note:"",date:dt,xfer:true};if(ok){t1.rc=true;t1.rcId=rid}
-      S.tx.unshift(t1);var lid=String(now+2+fi*2);lids.push(lid);
-      S.lent.unshift({id:lid,txid:t1.id,who:name,amt:amt,date:dt,shop:pe,rid:ok?rid:"",items:its,rtot:a,ret:scan.retailer||""})});
+    fr.forEach(function(pi,k){
+      var amt=sh.out[pi],name=(P[pi].name||"").trim()||("Person "+(pi+1)),t1={id:String(now+1+k*2),type:"exp",amt:amt,cat:"Paid for a friend (to be repaid)",who:scan.who||0,payee:name,purpose:"Paid for "+name+(pe?" at "+pe:""),raw:nt,ch:"",note:"",date:dt,xfer:true};
+      if(ok){t1.rc=true;t1.rcId=rid}S.tx.unshift(t1);var lid=String(now+2+k*2);lids.push(lid);
+      S.lent.unshift({id:lid,txid:t1.id,who:name,amt:amt,date:dt,shop:pe,rid:ok?rid:"",items:sh.per[pi].its.map(function(x){return {n:x.n,a:x.a,b:x.b}}),rtot:a,ret:scan.retailer||"",pi:pi,col:P[pi].color})});
+    if(ok){var meta={w:scan.w,h:scan.h,shop:pe,date:dt,total:a,strokes:scan.strokes.map(function(s){return {p:s.p,w:s.w,pts:s.pts.map(function(q){return [Math.round(q[0]),Math.round(q[1])]})}}),persons:P.map(function(p){return {name:p.name,color:p.color,me:p.me}}),parts:P.map(function(p,i){return {name:p.name,color:p.color,amt:p.me?sh.per[i].sub:sh.out[i]}}).filter(function(x){return x.amt>0}).concat([{name:S.names[0]||"Me",color:"#999999",amt:mine}])};rcPut(rid+"#m",JSON.stringify(meta),function(){})}
     if(!save()){S.tx=S.tx.slice(S.tx.length-n0);S.lent=S.lent.slice(S.lent.length-l0);er("Could not save on this device.");return}
     cleanup();scan=null;ym=dt.slice(0,7);view=(send&&lids.length)?"debt":"hist";render();
     if(send&&lids.length===1)sendReceipt(lids[0]);
     else if(send&&lids.length>1){var el=$("lm");if(el)el.textContent="Saved. Tap Send receipt on each person to share their PDF."}})}
-function highlightImage(src,boxes,label,cb){
+function markedCanvas(src,marks,label,cb){
   var im=new Image();
-  im.onload=function(){var bh=Math.max(70,Math.round(im.width*.1)),c=document.createElement("canvas");c.width=im.width;c.height=im.height+bh;var g=c.getContext("2d");
-    g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0);
-    boxes.forEach(function(b){g.fillStyle="rgba(255,214,0,.4)";g.fillRect(b[0]-6,b[1]-3,b[2]-b[0]+12,b[3]-b[1]+6);g.strokeStyle="rgba(214,150,0,.9)";g.lineWidth=2;g.strokeRect(b[0]-6,b[1]-3,b[2]-b[0]+12,b[3]-b[1]+6)});
-    g.fillStyle="#2e7d6b";g.fillRect(0,im.height,c.width,bh);g.fillStyle="#fff";g.font="bold "+Math.round(bh*.46)+"px sans-serif";g.textAlign="center";g.textBaseline="middle";g.fillText(label,c.width/2,im.height+bh/2);
-    c.toBlob(function(b){cb(b,c.width,c.height)},"image/jpeg",.85)};
+  im.onload=function(){var bh=label?Math.max(70,Math.round(im.width*.1)):0,c=document.createElement("canvas");c.width=im.width;c.height=im.height+bh;var g=c.getContext("2d");
+    g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0);drawMarks(g,marks,1);
+    if(label){g.fillStyle="#2e7d6b";g.fillRect(0,im.height,c.width,bh);g.fillStyle="#fff";g.font="bold "+Math.round(bh*.46)+"px sans-serif";g.textAlign="center";g.textBaseline="middle";g.fillText(label,c.width/2,im.height+bh/2)}
+    cb(c)};
   im.onerror=function(){cb(null)};im.src=src}
+function highlightImage(src,marks,label,cb){markedCanvas(src,marks,label,function(c){if(!c){cb(null);return}c.toBlob(function(b){cb(b,c.width,c.height)},"image/jpeg",.85)})}
+function metaMarks(meta,pi){return (meta.strokes||[]).filter(function(s){return pi==null||s.p===pi}).map(function(s){return {pts:s.pts,w:s.w,c:meta.persons[s.p].color}})}
+function deliverPdf(bytes,name,txt,m,el){
+  var file=null;try{file=new File([bytes],name,{type:"application/pdf"})}catch(x){}
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:name,text:txt}).then(function(){m("Shared.")},function(er){m(er&&er.name==="AbortError"?"":"Couldn’t share the file.")});return}
+  var u=URL.createObjectURL(new Blob([bytes],{type:"application/pdf"})),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);if(a.parentNode)a.parentNode.removeChild(a)},1000);
+  if(el)el.innerHTML=esc("Sharing isn’t available here, so the PDF was saved.")+" "+esc("Send the file from your downloads, or use these:")+' <a href="https://wa.me/?text='+encodeURIComponent(txt)+'" target="_blank" rel="noopener">WhatsApp</a> · <a href="mailto:?subject='+encodeURIComponent(name)+'&body='+encodeURIComponent(txt)+'">Email</a>'}
+function toBytes(blob,cb){var fr=new FileReader();fr.onload=function(){cb(new Uint8Array(fr.result))};fr.onerror=function(){cb(null)};fr.readAsArrayBuffer(blob)}
+function msgEl(){return ($("ed")&&$("ed").open&&$("rdm"))||$("lm")}
 function sendReceipt(id){
-  var e=S.lent.filter(function(x){return x.id===id})[0],el=$("lm"),m=function(t){if(el)el.textContent=t};if(!e)return;
+  var e=S.lent.filter(function(x){return x.id===id})[0],el=msgEl(),m=function(t){if(el)el.textContent=t};if(!e)return;
   m("Making the PDF…");
   var go=function(img){
-    var its=(e.items||[]).map(function(x){return {n:x.n,a:x.a}}),sub=Math.round(its.reduce(function(a,x){return a+x.a},0)*100)/100,L=LANG==="ms"?PM:PL;
-    var tax=Math.round((e.amt-sub)*100)/100;if(!its.length){its=[{n:L.share,a:e.amt}];sub=e.amt;tax=0}
-    var bytes=makePdf({L:L,name:e.who,shop:e.shop||"",date:e.date,total:e.rtot||0,items:its,sub:sub,tax:tax,amount:e.amt,img:img}),name=pdfName(e.who,e.amt,e.date),file=null;
-    try{file=new File([bytes],name,{type:"application/pdf"})}catch(x){}
-    var txt=LANG==="ms"?"Hai "+e.who+", ini bil"+(e.shop?" dari "+e.shop:"")+". Bahagian anda ialah "+rm(e.amt)+". Terima kasih!":"Hi "+e.who+", here is the bill"+(e.shop?" from "+e.shop:"")+". Your share is "+rm(e.amt)+". Thanks!";
-    if(file&&navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:name,text:txt}).then(function(){m("Shared.")},function(er){m(er&&er.name==="AbortError"?"":"Couldn’t share the file.")});return}
-    var u=URL.createObjectURL(new Blob([bytes],{type:"application/pdf"})),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);if(a.parentNode)a.parentNode.removeChild(a)},1000);
-    if(el)el.innerHTML=esc("Sharing isn’t available here, so the PDF was saved.")+" "+esc("Send the file from your downloads, or use these:")+' <a href="https://wa.me/?text='+encodeURIComponent(txt)+'" target="_blank" rel="noopener">WhatsApp</a> · <a href="mailto:?subject='+encodeURIComponent(name)+'&body='+encodeURIComponent(txt)+'">Email</a>'};
+    var its=(e.items||[]).map(function(x){return {n:x.n,a:x.a}}),sub=r2(its.reduce(function(a,x){return a+x.a},0)),L=LANG==="ms"?PM:PL,tax=r2(e.amt-sub);
+    if(!its.length){its=[{n:L.share,a:e.amt}];sub=e.amt;tax=0}
+    var bytes=makePdf({L:L,name:e.who,shop:e.shop||"",date:e.date,total:e.rtot||0,items:its,sub:sub,tax:tax,amount:e.amt,img:img}),
+        txt=LANG==="ms"?"Hai "+e.who+", ini bil"+(e.shop?" dari "+e.shop:"")+". Bahagian anda ialah "+rm(e.amt)+". Terima kasih!":"Hi "+e.who+", here is the bill"+(e.shop?" from "+e.shop:"")+". Your share is "+rm(e.amt)+". Thanks!";
+    deliverPdf(bytes,pdfName(e.who,e.amt,e.date),txt,m,el)};
   if(!e.rid){go(null);return}
   rcGet(e.rid,function(v){
     if(!v){go(null);return}
-    highlightImage(v,(e.items||[]).map(function(x){return x.b}).filter(Boolean),e.who+": "+rm(e.amt),function(blob,w,h){
-      if(!blob){go(null);return}
-      var fr=new FileReader();fr.onload=function(){go({bytes:new Uint8Array(fr.result),w:w,h:h})};fr.onerror=function(){go(null)};fr.readAsArrayBuffer(blob)})})}
-function assignOpts(i){
-  var cur=(scan.assign||{})[i]||"me",o=[["me",S.names[0]||"Me"]].concat(scan.people.map(function(n,k){return ["f"+k,n]})).concat([["all","Shared by everyone"]]);
-  return o.map(function(x){return '<option value="'+x[0]+'"'+(x[0]===cur?" selected":"")+'>'+esc(x[1])+'</option>'}).join("")}
+    rcGet(e.rid+"#m",function(ms){
+      var meta=null;try{meta=ms?JSON.parse(ms):null}catch(x){}
+      var marks=meta&&e.pi!=null?metaMarks(meta,e.pi).map(function(s){return {pts:s.pts,w:s.w,c:e.col||s.c}}):(e.items||[]).filter(function(x){return x.b}).map(function(x){return {b:x.b,c:e.col||"#ffe600"}});
+      highlightImage(v,marks,e.who+": "+rm(e.amt),function(blob,w,h){if(!blob){go(null);return}toBytes(blob,function(b){go(b?{bytes:b,w:w,h:h}:null)})})})})}
+function fullPdf(rid){
+  var el=msgEl(),m=function(t){if(el)el.textContent=t};m("Making the PDF…");
+  rcGet(rid,function(v){rcGet(rid+"#m",function(ms){
+    var meta=null;try{meta=JSON.parse(ms)}catch(x){}
+    if(!v||!meta){m("Couldn’t find the receipt photo.");return}
+    highlightImage(v,metaMarks(meta,null),(meta.shop||"Receipt")+": "+rm(meta.total),function(blob,w,h){
+      var run=function(img){var L=LANG==="ms"?PM:PL,L2={};for(var k in L)L2[k]=L[k];L2.forLbl=L.rcpt;L2.pay=LANG==="ms"?"Jumlah resit":"Receipt total";L2.sub=LANG==="ms"?"Jumlah semua bahagian":"All parts together";
+        var its=(meta.parts||[]).map(function(x){return {n:x.name,a:x.amt}}),sub=r2(its.reduce(function(a,x){return a+x.a},0));
+        var bytes=makePdf({L:L2,name:meta.shop||"Receipt",shop:meta.shop||"",date:meta.date,total:meta.total,items:its,sub:sub,tax:0,amount:meta.total,img:img});
+        deliverPdf(bytes,pdfName(meta.shop||"Receipt",meta.total,meta.date),(meta.shop||"Receipt")+" "+rm(meta.total),m,el)};
+      if(!blob){run(null);return}toBytes(blob,function(b){run(b?{bytes:b,w:w,h:h}:null)})})})})}
+function openReceipt(rid){
+  rcGet(rid,function(v){rcGet(rid+"#m",function(ms){
+    var meta=null;try{meta=ms?JSON.parse(ms):null}catch(x){}
+    var ents=S.lent.filter(function(l){return l.rid===rid}),show=function(src){
+      $("ed").innerHTML='<h2>Receipt</h2>'+(src?'<img src="'+src+'" alt="Receipt photo" style="width:100%;border-radius:12px;margin-bottom:12px">':'<p class="mu">The photo isn’t on this device any more.</p>')+(v&&meta?'<button class="btn w" id="rpdf" style="margin-bottom:10px">Save PDF</button>':'')+ents.map(function(e){return '<button class="btn g w" data-send="'+e.id+'" style="margin-bottom:8px">Send '+esc(e.who)+'</button>'}).join("")+'<p class="mu" id="rdm"></p><div style="text-align:right"><button class="btn g" id="rcc">Close</button></div>';
+      $("ed").showModal();$("rcc").onclick=function(){$("ed").close()};if($("rpdf"))$("rpdf").onclick=function(){fullPdf(rid)}};
+    if(v&&meta&&meta.strokes&&meta.strokes.length){markedCanvas(v,metaMarks(meta,null),"",function(c){show(c?c.toDataURL("image/jpeg",.8):v)})}else show(v)})})}
 function scanHtml(){
   if(!scan)return "";
   if(scan.err)return '<div class="card"><div class="tip bad">'+esc(scan.err)+'</div><button class="btn g w" id="rcx">Try again</button></div>';
   if(scan.busy)return '<div class="card"><div class="flex"><img class="thumb" src="'+scan.img+'" alt="Receipt photo"><div><b>Reading the receipt…</b><div class="mu" id="rsp">'+esc(scan.msg||"")+'</div></div></div></div>';
-  var items=scan.items||[],ppl=scan.people||[];
-  return '<div class="card"><h2>Check this receipt</h2><div class="flex mb"><img class="thumb" src="'+scan.img+'" alt="Receipt photo"><div class="tip" style="flex:1;margin:0;min-width:160px">'+esc(scan.msg||"")+'</div></div>'+
-  '<label>Shop<input id="rsh" value="'+esc(scan.payee||"")+'"></label><label>Total (RM)<input id="ram" type="number" min="0" step="0.01" inputmode="decimal" value="'+(scan.amt>0?(+scan.amt).toFixed(2):"")+'"></label><label>Date<input id="rdt" type="date" value="'+scan.date+'"></label>'+
+  var P=scan.persons=scan.persons||newPersons(),cur=P[scan.cur||0],boxes=hasBoxes(),tl=scan.tool||"mark";
+  var viewer=boxes?'<div class="card"><h2>Highlight each person’s items</h2><p class="mu" style="margin-top:0">Pick a person, then drag your finger over their items or amounts on the receipt.</p>'+
+    '<div class="pchips">'+P.map(function(p,i){return '<button data-pp="'+i+'" aria-pressed="'+(i===(scan.cur||0))+'" style="border-color:'+p.color+'"><span class="dot" style="background:'+p.color+'"></span><span class="pn">'+esc(p.name)+'</span></button>'}).join("")+'</div>'+
+    '<div class="flex" style="margin:12px 0 4px;gap:10px"><input id="rpnm" value="'+esc(cur.name)+'" aria-label="Name for this colour" style="flex:1;min-width:120px"><label class="chk" style="margin:0;white-space:nowrap"><input type="checkbox" id="rpme"'+(cur.me?' checked':'')+'><span>This is me</span></label></div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button class="btn g" data-tool="marker" style="padding:8px 12px">'+(scan.marker===false?'Marker off (scroll)':'Marker on')+'</button><button class="btn g" data-tool="erase" style="padding:8px 12px'+(tl==="erase"?';border-color:var(--ac)':'')+'">Eraser</button><button class="btn g" data-tool="undo" style="padding:8px 12px">Undo</button><button class="btn g" data-tool="clear" style="padding:8px 12px">Clear</button></div>'+
+    '<div id="rvw"><canvas id="rvc" style="width:100%;border-radius:10px;border:1px solid var(--ln);touch-action:'+(scan.marker===false?'pan-y':'none')+'"></canvas></div>'+
+    '<p class="mu" style="font-size:12px;margin:8px 0 0">Highlighting an item in more than one colour shares it equally. Tax and service charge are shared in proportion.</p></div>'
+    :'';
+  return '<div class="card"><h2>Check this receipt</h2><div class="flex mb"><img class="thumb" src="'+scan.img+'" alt="Receipt photo"><div class="tip" style="flex:1;margin:0;min-width:160px">'+esc(scan.msg||"")+'</div></div></div>'+viewer+
+  '<div class="card"><h2>Who pays what</h2><div id="rsplit">'+splitSummary()+'</div>'+
+  (boxes?'':'<p class="mu">The reader couldn’t find item positions, so type each person’s amount.</p>'+P.map(function(p,i){return (i<2||p.name!=="Person "+(i+1))?'<label>'+esc(p.name)+' pays (RM)<input id="rma'+i+'" type="number" min="0" step="0.01" inputmode="decimal" value="'+esc((scan.manual||[])[i]||"")+'"></label>':''}).join(""))+'</div>'+
+  '<div class="card"><label>Shop<input id="rsh" value="'+esc(scan.payee||"")+'"></label><label>Total (RM)<input id="ram" type="number" min="0" step="0.01" inputmode="decimal" value="'+(scan.amt>0?(+scan.amt).toFixed(2):"")+'"></label><label>Date<input id="rdt" type="date" value="'+scan.date+'"></label>'+
   '<label>Category<select id="rct">'+catSelS(scan.cat)+'</select></label><label>Paid by<select id="rwh">'+S.names.map(function(n,k){return '<option value="'+k+'"'+(k===(scan.who||0)?' selected':'')+'>'+esc(n)+'</option>'}).join("")+'</select></label><label>Items (optional)<input id="rnt" value="'+esc(scan.raw||"")+'"></label>'+
-  '<div class="sec" style="margin:16px 2px 8px">Buying for a friend? Split the bill</div>'+
-  '<datalist id="lenders2">'+lpeople().map(function(p){return '<option value="'+esc(p.name)+'">'}).join("")+dpeople().map(function(p){return '<option value="'+esc(p.name)+'">'}).join("")+'</datalist>'+
-  '<label>Splitting with (names, comma separated)<input id="rpn" list="lenders2" value="'+esc(ppl.join(", "))+'" placeholder="e.g. Ali, Mak"></label>'+
-  (ppl.length&&items.length?'<p class="mu" style="margin:0 0 6px">Assign each item to who it is for.</p>'+items.map(function(x,i){return '<div class="item"><div style="flex:1;min-width:0"><div>'+esc(x.n)+'</div><div class="mu">'+rm(x.a)+'</div></div><select data-as="'+i+'" style="width:auto;max-width:46%">'+assignOpts(i)+'</select></div>'}).join("")+'<button class="lnk" data-eq="1" style="margin:8px 0">Split everything equally</button>':'')+
-  (ppl.length&&!items.length?ppl.map(function(n,i){return '<label>'+esc(n)+' pays (RM)<input id="rma'+i+'" type="number" min="0" step="0.01" inputmode="decimal" value="'+esc((scan.manual||[])[i]||"")+'"></label>'}).join(""):'')+
-  (ppl.length?'<div class="card" style="background:var(--tint);box-shadow:none"><h2>Who pays what</h2><div id="rsplit">'+splitSummary()+'</div></div>':'')+
   '<div id="rer" class="neg mb" role="alert"></div><div style="display:flex;gap:10px"><button class="btn g" id="rcx" style="flex:1">Cancel</button><button class="btn" id="rsv" style="flex:2">Save with receipt</button></div><button class="btn g w" id="rsvs" style="margin-top:10px">Save and send receipt</button>'+
   (scan.text?'<div style="margin-top:10px"><button class="lnk" data-cpt="1">Copy reader text</button> <span class="mu" id="rcm"></span></div>':'')+'</div>'}
 function scanCard(){
@@ -588,8 +632,8 @@ function editTx(id){
 function copy(txt,cb){
   var no=function(){var a=document.createElement("textarea");a.value=txt;a.style.cssText="position:fixed;opacity:0";document.body.appendChild(a);a.select();var r=false;try{r=document.execCommand("copy")}catch(e){}document.body.removeChild(a);cb(r)};
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){cb(true)},no);else no()}
-document.addEventListener("input",function(e){var t=e.target;if(t&&scan&&(t.id==="ram"||(t.id&&t.id.indexOf("rma")===0)))updateSplit()});
-document.addEventListener("change",function(e){var t=e.target;if(t.dataset&&t.dataset.as!==undefined&&scan){scan.assign=scan.assign||{};scan.assign[+t.dataset.as]=t.value;updateSplit();return}if(t.id==="rpn"&&scan){peopleChange();return}if(t.dataset&&t.dataset.pc!==undefined){var p=pend[+t.dataset.pc];p.cat=t.value;p.review=false;p.purpose=mkp(p.cat,p.payee,p.type==="inc",p.raw);render()}});
+document.addEventListener("input",function(e){var t=e.target;if(!t||!scan||!scan.persons)return;if(t.id==="rpnm"){scan.persons[scan.cur||0].name=t.value;var ch=document.querySelector&&document.querySelector('[data-pp="'+(scan.cur||0)+'"] .pn');if(ch)ch.textContent=t.value;updateSplit();return}if(t.id==="ram"||(t.id&&t.id.indexOf("rma")===0))updateSplit()});
+document.addEventListener("change",function(e){var t=e.target;if(t.id==="rpme"&&scan&&scan.persons){scan.persons[scan.cur||0].me=t.checked;updateSplit();return}if(t.dataset&&t.dataset.pc!==undefined){var p=pend[+t.dataset.pc];p.cat=t.value;p.review=false;p.purpose=mkp(p.cat,p.payee,p.type==="inc",p.raw);render()}});
 function stats(){
   var ms={};S.tx.forEach(function(t){if(t.xfer)return;var k=t.date.slice(0,7),o=ms[k]||(ms[k]={i:0,e:0,n:0});if(t.type==="inc")o.i+=t.amt;else{o.e+=t.amt;if(TYPE[t.cat]==="need")o.n+=t.amt}});
   var k=Object.keys(ms),c=Math.max(k.length,1),r={inc:0,exp:0,need:0};k.forEach(function(x){r.inc+=ms[x].i;r.exp+=ms[x].e;r.need+=ms[x].n});
@@ -693,17 +737,18 @@ function render(){S.lent=S.lent||[];S.debts=S.debts||[];
   q("csvh",function(){sendFile(csvFile(),function(m){$("cm").textContent=m})});
   q("rcb",function(){$("rcam").click()});q("rpb",function(){$("rpick").click()});
   ["rcam","rpick"].forEach(function(i){var el=$(i);if(el)el.onchange=function(){handleReceipt(this.files&&this.files[0])}});
-  q("rcx",function(){scan=null;render()});q("rsv",function(){saveReceipt(false)});q("rsvs",function(){saveReceipt(true)});
+  q("rcx",function(){scan=null;render()});if($("rvc"))rvInit();q("rsv",function(){saveReceipt(false)});q("rsvs",function(){saveReceipt(true)});
   q("ob",function(){var v=prompt("Balance in your account before you started using this app (RM)",S.open||0);if(v===null)return;var n=parseFloat(String(v).replace(/,/g,""));if(!isNaN(n)){S.open=n;save();render()}});
   if($("fq"))$("fq").oninput=function(){var v=this.value.toLowerCase();[].forEach.call(document.querySelectorAll("tr[data-s]"),function(r){r.classList.toggle("hide",r.dataset.s.indexOf(v)<0)})};
   q("ps",function(){var n=Date.now(),mx="";pend.forEach(function(p,i){p.id=String(n+i);delete p.review;if(p.date>mx)mx=p.date;S.tx.unshift(p)});pend=[];save();ym=mx.slice(0,7);view="hist";render()});
 }
 document.addEventListener("click",function(e){
-  var t=e.target.closest("[data-v],[data-k],[data-del],[data-chk],[data-ed],[data-pr],[data-keep],[data-dadd],[data-dpay],[data-ddel],[data-am],[data-cs],[data-rc],[data-send],[data-lpaid],[data-ldel],[data-eq],[data-cpt]");if(!t)return;if(t.dataset.pr!==undefined){pend.splice(+t.dataset.pr,1);render();return}if(t.dataset.ed){editTx(t.dataset.ed);return}
+  var t=e.target.closest("[data-v],[data-k],[data-del],[data-chk],[data-ed],[data-pr],[data-keep],[data-dadd],[data-dpay],[data-ddel],[data-am],[data-cs],[data-rc],[data-send],[data-lpaid],[data-ldel],[data-pp],[data-tool],[data-cpt]");if(!t)return;if(t.dataset.pr!==undefined){pend.splice(+t.dataset.pr,1);render();return}if(t.dataset.ed){editTx(t.dataset.ed);return}
   if(t.dataset.am){amode=t.dataset.am;if(kind==="debt")kind="exp";pre={};scan=null;render();return}
   if(t.dataset.cs){csvAll=t.dataset.cs==="1";render();return}
-  if(t.dataset.rc){rcGet(t.dataset.rc,function(v){$("ed").innerHTML='<h2>Receipt</h2>'+(v?'<img src="'+v+'" alt="Receipt photo" style="width:100%;border-radius:12px;margin-bottom:12px">':'<p class="mu">The photo isn’t on this device any more.</p>')+'<div style="text-align:right"><button class="btn g" id="rcc">Close</button></div>';$("ed").showModal();$("rcc").onclick=function(){$("ed").close()}});return}
-  if(t.dataset.eq){scanSync();scan.assign={};(scan.items||[]).forEach(function(x,i){scan.assign[i]="all"});render();return}
+  if(t.dataset.rc){openReceipt(t.dataset.rc);return}
+  if(t.dataset.pp!==undefined){scanSync();scan.cur=+t.dataset.pp;render();return}
+  if(t.dataset.tool){var tl=t.dataset.tool;scanSync();if(tl==="undo"){scan.strokes.pop();rvDraw();updateSplit()}else if(tl==="clear"){scan.strokes=[];rvDraw();updateSplit()}else if(tl==="marker"){scan.marker=scan.marker===false;render()}else{scan.tool=scan.tool===tl?"mark":tl;render()}return}
   if(t.dataset.cpt){copy(scan.text||"",function(ok){var e=$("rcm");if(e)e.textContent=ok?"Copied.":"Couldn’t copy."});return}
   if(t.dataset.send){sendReceipt(t.dataset.send);return}
   if(t.dataset.lpaid){var lp=lpeople().filter(function(x){return x.key===t.dataset.lpaid})[0];kind="inc";amode="manual";pre={cat:"Paid back by friend",py:lp?lp.name:""};view="add";render();return}
@@ -1158,7 +1203,21 @@ Send the file from your downloads, or use these: ⇒ Hantar fail itu dari muat t
 WhatsApp ⇒ WhatsApp
 Email ⇒ E-mel
 Saved. ⇒ Disimpan.
-Tap Send receipt on each person to share their PDF. ⇒ Ketik Hantar resit pada setiap orang untuk berkongsi PDF mereka.`;
+Tap Send receipt on each person to share their PDF. ⇒ Ketik Hantar resit pada setiap orang untuk berkongsi PDF mereka.
+Highlight each person’s items ⇒ Serlahkan item setiap orang
+Pick a person, then drag your finger over their items or amounts on the receipt. ⇒ Pilih seorang, kemudian seret jari anda pada item atau jumlah mereka di resit.
+Name for this colour ⇒ Nama untuk warna ini
+This is me ⇒ Ini saya
+Marker on ⇒ Penanda hidup
+Marker off (scroll) ⇒ Penanda mati (tatal)
+Eraser ⇒ Pemadam
+Clear ⇒ Kosongkan
+Not highlighted (mine) ⇒ Tidak diserlahkan (saya)
+Highlighting an item in more than one colour shares it equally. ⇒ Menyerlahkan item dengan lebih daripada satu warna akan dikongsi sama rata.
+Tax and service charge are shared in proportion. ⇒ Cukai dan caj perkhidmatan dikongsi mengikut kadar.
+The reader couldn’t find item positions, so type each person’s amount. ⇒ Pembaca tidak jumpa kedudukan item, jadi taip jumlah setiap orang.
+Save PDF ⇒ Simpan PDF
+Highlight someone’s items first. ⇒ Serlahkan item seseorang dahulu.`;
 var LANG="en",MAP={},RULES=[];
 var NUMRX=/RM\s?-?\d[\d,]*(?:\.\d+)?|\d+(?:\.\d+)?/g;
 function nrm(t){var v=[];return {k:t.replace(NUMRX,function(m){v.push(m);return "{}"}),v:v}}
@@ -1176,7 +1235,9 @@ RULES.push([/^Your biggest single expense was (RM\s?-?[\d,.]+) \((.+)\)\. Was it
 RULES.push([/^Paid for (.+?)(?: at (.+))?$/,function(m){return "Dibayar untuk "+m[1]+(m[2]?" di "+m[2]:"")}]);
 function trRules(s){for(var i=0;i<RULES.length;i++){var m=s.match(RULES[i][0]);if(m){var o=RULES[i][1](m);if(o!=null)return o}}return null}
 RULES.push([/^Looks like (.+)\.$/,function(m){return "Nampak seperti "+m[1]+"."}]);
-RULES.push([/^(.+) pays \(RM\)$/,function(m){return m[1]+" membayar (RM)"}]);
+RULES.push([/^(.+) pays \(RM\)$/,function(m){return trCore(m[1])+" membayar (RM)"}]);
+RULES.push([/^Person (\d)$/,function(m){return "Orang "+m[1]}]);
+RULES.push([/^Send (.+)$/,function(m){return "Hantar "+m[1]}]);
 function trCore(s){
   var n=nrm(s),r=MAP[n.k];if(r!=null)return fill(r,n.v);
   var rr=trRules(s);if(rr!=null)return rr;
