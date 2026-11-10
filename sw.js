@@ -1,6 +1,6 @@
-// AnchorWise service worker: network first, falls back to the saved copy when offline.
-const CACHE = 'anchorwise-v13';
-const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './logo-square.png', './logo-square-dark.png', './logo-mark.png'];
+// Aven service worker: network first, falls back to the saved copy when offline.
+const CACHE = 'aven-v14';
+const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './logo-mark.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
 });

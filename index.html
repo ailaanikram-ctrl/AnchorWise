@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>AnchorWise – Household money tracker (Malaysia)</title>
-<meta name="theme-color" content="#3f7d69">
+<title>Aven – Household money tracker (Malaysia)</title>
+<meta name="theme-color" content="#0b5d3b">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="AnchorWise">
+<meta name="apple-mobile-web-app-title" content="Aven">
 <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f3efe6;--sf:#fbf8f1;--ink:#38433d;--mu:#5d6b64;--ln:#e4ddcf;--ac:#3f7d69;--ai:#fff;--wa:#a8721d;--rd:#b0524a;--ok:#3f7d69;--tint:#ebe6d9;--bl:#4f7aa8;--sh:0 1px 2px rgba(56,67,61,.05),0 10px 28px rgba(56,67,61,.06);
+:root{--bg:#f5f1e2;--sf:#fbf9ef;--ink:#2a4536;--mu:#566a5d;--ln:#e3e0cb;--ac:#0b5d3b;--ac2:#8bc172;--ai:#fff;--wa:#8d5f17;--rd:#a8524a;--ok:#0b5d3b;--tint:#eaedd8;--bl:#3f739a;--sh:0 1px 2px rgba(1,56,36,.05),0 10px 28px rgba(1,56,36,.07);
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b221e;--sf:#232b26;--ink:#dad7cb;--mu:#a0aca4;--ln:#323c36;--ac:#86c8ae;--ai:#14231d;--wa:#dfb064;--rd:#e39a8f;--ok:#86c8ae;--tint:#2a342e;--bl:#8fb4dc;--sh:none;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#1b221e;--sf:#232b26;--ink:#dad7cb;--mu:#a0aca4;--ln:#323c36;--ac:#86c8ae;--ai:#14231d;--wa:#dfb064;--rd:#e39a8f;--ok:#86c8ae;--tint:#2a342e;--bl:#8fb4dc;--sh:none;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b211a;--sf:#112c22;--ink:#e9e4cf;--mu:#a3b5a6;--ln:#1f3d2f;--ac:#8bc172;--ac2:#8bc172;--ai:#06251a;--wa:#e0b265;--rd:#e59b8f;--ok:#8bc172;--tint:#173628;--bl:#8fb4dc;--sh:none;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0b211a;--sf:#112c22;--ink:#e9e4cf;--mu:#a3b5a6;--ln:#1f3d2f;--ac:#8bc172;--ac2:#8bc172;--ai:#06251a;--wa:#e0b265;--rd:#e59b8f;--ok:#8bc172;--tint:#173628;--bl:#8fb4dc;--sh:none;color-scheme:dark}
 html{font-size:17px;scroll-padding-top:env(safe-area-inset-top,0px)}html.fs-l{font-size:19.5px}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 1rem/1.7 "Lexend",Verdana,"Trebuchet MS",system-ui,sans-serif;letter-spacing:.012em;word-spacing:.08em;text-align:left;padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
@@ -27,17 +27,17 @@ h1{font-size:1.45rem;font-weight:600;line-height:1.3;margin:0}
 h2{font-size:1.05rem;margin:0 0 14px;font-weight:600;line-height:1.4}
 .sec{font-size:.9rem;font-weight:600;color:var(--mu);margin:30px 4px 12px}
 .top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px 14px;margin-bottom:20px}
-.brand{display:flex;align-items:center;gap:10px;font-weight:500;font-size:1.1rem}.brand b{color:var(--ac);font-weight:600}.brand img{border-radius:12px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:1.3rem;letter-spacing:.02em}.brand img{border-radius:12px}
 .mnav{display:flex;align-items:center;gap:4px;font-size:.88rem;font-weight:500;white-space:nowrap;margin-left:auto}.mnav .lnk{font-size:1.5rem;padding:4px 10px;line-height:1;text-decoration:none}
 .card{background:var(--sf);border:1px solid var(--ln);border-radius:22px;padding:20px;margin-bottom:14px;box-shadow:var(--sh)}
-.hero{background:linear-gradient(160deg,#4d8c77,#37705f);color:#fff;border:0;box-shadow:0 12px 30px rgba(55,112,95,.2)}
-.hero .mu{color:rgba(255,255,255,.85)}
+.hero{background:radial-gradient(130% 150% at 15% 0%,#1f7f56 0%,#0b5d3b 46%,#023a26 100%);color:#f5f0db;border:0;box-shadow:0 14px 32px rgba(1,56,36,.28)}
+.hero .mu{color:rgba(245,240,219,.82)}
 .big{font-size:2rem;font-weight:600;letter-spacing:-.01em;line-height:1.25}
 .mu{color:var(--mu);font-size:.86rem;line-height:1.6}
 .three{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;text-align:left}.hero .three{grid-template-columns:1fr;gap:6px}.hero .three>div{display:flex;justify-content:space-between;align-items:baseline;gap:12px}.hero .three b{display:inline;font-size:1rem}.hero .three span{font-size:.88rem}
 .three b{display:block;font-size:.95rem;font-weight:600}.three span{font-size:.78rem}
 .bar{height:8px;background:var(--tint);border-radius:8px;overflow:hidden;margin:6px 0 14px}
-.bar i{display:block;height:100%;background:var(--ac);border-radius:8px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--ac),var(--ac2));border-radius:8px}
 .row{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
 label{display:grid;gap:8px;font-weight:500;font-size:.92rem;margin-bottom:16px}
 input,select,textarea{width:100%;min-height:48px;background:var(--bg);border:1.5px solid var(--ln);border-radius:14px;padding:12px 14px;font-weight:400}
@@ -51,7 +51,7 @@ textarea{min-height:92px;line-height:1.6}
 .tip{padding:14px 16px;border-radius:16px;margin-bottom:10px;background:var(--tint)}
 .tip.warn{background:color-mix(in srgb,var(--wa) 15%,var(--sf))}
 .tip.bad{background:color-mix(in srgb,var(--rd) 14%,var(--sf))}
-nav{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));max-width:536px;margin:0 auto;background:var(--sf);border:1px solid var(--ln);border-radius:26px;box-shadow:0 12px 32px rgba(56,67,61,.14);z-index:5}
+nav{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));max-width:536px;margin:0 auto;background:var(--sf);border:1px solid var(--ln);border-radius:26px;box-shadow:0 12px 32px rgba(1,56,36,.16);z-index:5}
 nav div{display:grid;grid-template-columns:repeat(5,1fr)}
 nav button{border:0;background:none;padding:10px 2px 9px;font-size:.68rem;font-weight:500;letter-spacing:0;word-spacing:0;line-height:1.25;color:var(--mu);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px}
 nav button svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -76,7 +76,7 @@ dialog#hl{width:100%;height:100%;max-width:none;max-height:none;margin:0;padding
 .hls{flex:1;overflow:auto;background:var(--tint);-webkit-overflow-scrolling:touch;border-top:1px solid var(--ln);border-bottom:1px solid var(--ln)}.hls canvas{display:block;margin:0 auto;background:#fff}.hlf{padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px));background:var(--sf)}.hlf .mu{margin-bottom:10px;line-height:1.8}
 .who{padding:14px 0;border-bottom:1px solid var(--ln)}.wn{min-height:40px;padding:6px 10px;width:100%}
 summary{cursor:pointer;font-weight:500;padding:12px 0}details{margin-bottom:14px}
-dialog{border:0;border-radius:22px;background:var(--sf);color:var(--ink);width:min(440px,calc(100% - 24px));padding:22px}dialog::backdrop{background:rgba(30,36,32,.5)}
+dialog{border:0;border-radius:22px;background:var(--sf);color:var(--ink);width:min(440px,calc(100% - 24px));padding:22px}dialog::backdrop{background:rgba(2,30,20,.5)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -279,13 +279,13 @@ function buildRows(all){
   return out}
 function csvFile(){
   var cv=function(v){return '"'+String(v).replace(/"/g,'""')+'"'},r=buildRows(csvAll);
-  return {name:"anchorwise-"+(csvAll?"all":ym)+".csv",text:"date,description,debit,credit,balance,category,person,message\n"+r.map(function(x){return [x[0],cv(x[1]),x[2],x[3],x[4].toFixed(2),cv(x[5]),cv(x[6]),cv(x[7])].join(",")}).join("\n")}}
+  return {name:"aven-"+(csvAll?"all":ym)+".csv",text:"date,description,debit,credit,balance,category,person,message\n"+r.map(function(x){return [x[0],cv(x[1]),x[2],x[3],x[4].toFixed(2),cv(x[5]),cv(x[6]),cv(x[7])].join(",")}).join("\n")}}
 function saveFile(name,text){
   var b=new Blob(["\ufeff"+text],{type:"text/csv;charset=utf-8"}),u=URL.createObjectURL(b),a=document.createElement("a");
   a.href=u;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);if(a.parentNode)a.parentNode.removeChild(a)},1000)}
 function sendFile(f,cb){
   var file=null;try{file=new File(["\ufeff"+f.text],f.name,{type:"text/csv"})}catch(e){}
-  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:"AnchorWise record",text:"My AnchorWise record"}).then(function(){cb("Shared.")},function(e){cb(e&&e.name==="AbortError"?"":"Couldn’t share the file.")});return}
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:"Aven record",text:"My Aven record"}).then(function(){cb("Shared.")},function(e){cb(e&&e.name==="AbortError"?"":"Couldn’t share the file.")});return}
   saveFile(f.name,f.text);cb("Sharing isn’t available here, so the file was saved instead. Attach it to an email or WhatsApp.")}
 function rdb(cb){try{var q=indexedDB.open("anchorwise",1);q.onupgradeneeded=function(){q.result.createObjectStore("receipts")};q.onsuccess=function(){cb(q.result)};q.onerror=function(){cb(null)}}catch(e){cb(null)}}
 function rcPut(id,v,done){rdb(function(db){if(!db){done(false);return}try{var t=db.transaction("receipts","readwrite");t.objectStore("receipts").put(v,id);t.oncomplete=function(){done(true)};t.onerror=function(){done(false)}}catch(e){done(false)}})}
@@ -445,8 +445,10 @@ function handleReceipt(file){
             if(!best||sc>best.score)best={score:sc,p:p,L:L,txt:txt,cc:ps.cc}}
           ps=null;step()})};
       step()})})}
-var PL={title:"Bill split",forLbl:"Amount for",store:"Store",date:"Date",total:"Receipt total",item:"Item",amount:"Amount",sub:"Items subtotal",tax:"Tax and service share",pay:"Amount to pay",made:"Made with AnchorWise",more:"more items",rcpt:"Receipt",share:"Your share of the bill"};
-var PM={title:"Pembahagian bil",forLbl:"Jumlah untuk",store:"Kedai",date:"Tarikh",total:"Jumlah resit",item:"Item",amount:"Jumlah",sub:"Jumlah kecil item",tax:"Bahagian cukai dan caj perkhidmatan",pay:"Jumlah perlu dibayar",made:"Dibuat dengan AnchorWise",more:"item lagi",rcpt:"Resit",share:"Bahagian anda daripada bil"};
+var PL={title:"Bill split",forLbl:"Amount for",store:"Store",date:"Date",total:"Receipt total",item:"Item",amount:"Amount",sub:"Items subtotal",tax:"Tax and service share",pay:"Amount to pay",made:"Made with Aven",more:"more items",rcpt:"Receipt",share:"Your share of the bill"};
+var PM={title:"Pembahagian bil",forLbl:"Jumlah untuk",store:"Kedai",date:"Tarikh",total:"Jumlah resit",item:"Item",amount:"Jumlah",sub:"Jumlah kecil item",tax:"Bahagian cukai dan caj perkhidmatan",pay:"Jumlah perlu dibayar",made:"Dibuat dengan Aven",more:"item lagi",rcpt:"Resit",share:"Bahagian anda daripada bil"};
+var LOGO_B64="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";
+function logoBytes(){var t=atob(LOGO_B64),b=new Uint8Array(t.length),i;for(i=0;i<t.length;i++)b[i]=t.charCodeAt(i);return b}
 function pdfBytes(s){var b=new Uint8Array(s.length);for(var i=0;i<s.length;i++)b[i]=s.charCodeAt(i)&255;return b}
 function pesc(s){return String(s).replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'"').replace(/[\u2013\u2014]/g,"-").replace(/\u2026/g,"...").replace(/[^\x20-\x7E\xA0-\xFF]/g,"?").replace(/([\\()])/g,"\\$1")}
 function ptw(s,z){var w=0,i,c;for(i=0;i<s.length;i++){c=s.charAt(i);w+=/[0-9]/.test(c)?556:c==="R"?722:(c==="M"||c==="m"||c==="W")?833:(c==="."||c===","||c===" ")?278:c==="-"?333:/[ijlI]/.test(c)?222:560}return w*z/1000}
@@ -455,7 +457,7 @@ function makePdf(o){
   var L=o.L,c=[],c2=[],y,i,H="0.13 0.19 0.17",G="0.42 0.49 0.46",dd=o.date.slice(8)+"/"+o.date.slice(5,7)+"/"+o.date.slice(0,4),ms=function(v){return "RM "+v.toFixed(2)};
   var T=function(a,t,x,yy,z,b,col){a.push("BT /"+(b?"F2":"F1")+" "+z+" Tf "+(col||H)+" rg "+x.toFixed(1)+" "+yy.toFixed(1)+" Td ("+pesc(t)+") Tj ET")};
   var TR=function(a,t,xr,yy,z,b,col){T(a,t,xr-ptw(pesc(t),z),yy,z,b,col)};
-  c.push("0.18 0.49 0.42 rg 0 770 595 72 re f");T(c,"AnchorWise",40,800,22,true,"1 1 1");T(c,L.title,40,781,11,false,"1 1 1");
+  c.push("0.0039 0.2196 0.1412 rg 0 770 595 72 re f");c.push("q 40 0 0 40 40 786 cm /Lg Do Q");T(c,"Aven",90,803,22,true,"0.96 0.94 0.86");T(c,L.title,90,787,11,false,"0.96 0.94 0.86");
   T(c,L.forLbl,40,735,10,false,G);T(c,o.name,40,714,20,true);
   TR(c,L.store+": "+(o.shop||"-"),555,735,10,false,G);TR(c,L.date+": "+dd,555,720,10,false,G);if(o.total>0)TR(c,L.total+": "+ms(o.total),555,705,10,false,G);
   T(c,L.item,40,672,10,true,G);TR(c,L.amount,555,672,10,true,G);c.push("0.88 0.92 0.9 RG 0.6 w 40 666 m 555 666 l S");
@@ -464,19 +466,20 @@ function makePdf(o){
   if(o.items.length>max){T(c,"+ "+(o.items.length-rows)+" "+L.more,40,y,10,false,G);y-=15}
   y-=10;T(c,L.sub,40,y,11,false,G);TR(c,ms(o.sub),555,y,11,false,G);y-=16;
   if(Math.abs(o.tax)>0.004){T(c,L.tax,40,y,11,false,G);TR(c,ms(o.tax),555,y,11,false,G);y-=16}
-  c.push("0.18 0.49 0.42 RG 1 w 40 "+(y+8)+" m 555 "+(y+8)+" l S");y-=14;T(c,L.pay,40,y,14,true);TR(c,ms(o.amount),555,y,16,true,"0.18 0.49 0.42");
+  c.push("0.043 0.365 0.231 RG 1 w 40 "+(y+8)+" m 555 "+(y+8)+" l S");y-=14;T(c,L.pay,40,y,14,true);TR(c,ms(o.amount),555,y,16,true,"0.043 0.365 0.231");
   T(c,L.made,40,40,9,false,G);
   if(o.img){var iw=o.img.w,ih=o.img.h,s=Math.min(539/iw,730/ih),w=iw*s,h=ih*s,x=(595-w)/2;T(c2,L.rcpt+" - "+o.name+" - "+ms(o.amount),40,805,11,true);c2.push("q "+w.toFixed(1)+" 0 0 "+h.toFixed(1)+" "+x.toFixed(1)+" "+(790-h).toFixed(1)+" cm /Im0 Do Q");T(c2,L.made,40,30,9,false,G)}
-  var chunks=[],off=0,xr=[],N=o.img?10:7;
+  var chunks=[],off=0,xr=[],Lg=o.img?10:7,N=Lg+1;
   var put=function(x){var b=typeof x==="string"?pdfBytes(x):x;chunks.push(b);off+=b.length};
   var obj=function(n,body){xr[n]=off;put(n+" 0 obj\n"+body+"\nendobj\n")};
   var stm=function(n,dict,data){xr[n]=off;put(n+" 0 obj\n<< "+dict+" /Length "+data.length+" >>\nstream\n");put(data);put("\nendstream\nendobj\n")};
   put("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
   obj(1,"<< /Type /Catalog /Pages 2 0 R >>");obj(2,"<< /Type /Pages /Kids ["+(o.img?"5 0 R 8 0 R":"5 0 R")+"] /Count "+(o.img?2:1)+" >>");
   obj(3,"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");obj(4,"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
-  obj(5,"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 6 0 R >>");stm(6,"",pdfBytes(c.join("\n")));
+  obj(5,"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> /XObject << /Lg "+Lg+" 0 R >> >> /Contents 6 0 R >>");stm(6,"",pdfBytes(c.join("\n")));
   if(o.img){stm(7,"/Type /XObject /Subtype /Image /Width "+o.img.w+" /Height "+o.img.h+" /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode",o.img.bytes);
     obj(8,"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> /XObject << /Im0 7 0 R >> >> /Contents 9 0 R >>");stm(9,"",pdfBytes(c2.join("\n")))}
+  stm(Lg,"/Type /XObject /Subtype /Image /Width 96 /Height 96 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode",logoBytes());
   var xo=off;put("xref\n0 "+N+"\n0000000000 65535 f \n");for(i=1;i<N;i++)put(("0000000000"+xr[i]).slice(-10)+" 00000 n \n");
   put("trailer\n<< /Size "+N+" /Root 1 0 R >>\nstartxref\n"+xo+"\n%%EOF");
   var all=new Uint8Array(off),p=0;chunks.forEach(function(b){all.set(b,p);p+=b.length});return all}
@@ -637,7 +640,7 @@ function markedCanvas(src,marks,label,cb){
   var im=new Image();
   im.onload=function(){var bh=label?Math.max(70,Math.round(im.width*.1)):0,c=document.createElement("canvas");c.width=im.width;c.height=im.height+bh;var g=c.getContext("2d");
     g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0);drawMarks(g,marks,1);
-    if(label){g.fillStyle="#2e7d6b";g.fillRect(0,im.height,c.width,bh);g.fillStyle="#fff";g.font="bold "+Math.round(bh*.46)+"px sans-serif";g.textAlign="center";g.textBaseline="middle";g.fillText(label,c.width/2,im.height+bh/2)}
+    if(label){g.fillStyle="#0b5d3b";g.fillRect(0,im.height,c.width,bh);g.fillStyle="#fff";g.font="bold "+Math.round(bh*.46)+"px sans-serif";g.textAlign="center";g.textBaseline="middle";g.fillText(label,c.width/2,im.height+bh/2)}
     cb(c)};
   im.onerror=function(){cb(null)};im.src=src}
 function highlightImage(src,marks,label,cb){markedCanvas(src,marks,label,function(c){if(!c){cb(null);return}c.toBlob(function(b){cb(b,c.width,c.height)},"image/jpeg",.85)})}
@@ -702,8 +705,8 @@ function home(){
   var ppl=S.names.map(function(n,k){return [n,sum(ex.filter(function(t){return t.who===k}))]});
   var rw=function(x){return '<div class="ins"><b>'+x[0]+'</b><div class="mu">'+x[1]+'</div></div>'},busy=H.av.indexOf(Math.max.apply(null,H.av)),dn=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   var pmax=H.pay.length?H.pay[0][1]:1;
-  return '<div class="top"><div class="brand"><img src="logo-mark.png" width="40" height="40" alt=""><span>Anchor<b>Wise</b></span></div><div class="mnav"><button class="lnk" id="mp" aria-label="Previous month">‹</button><span>'+mlabel()+'</span><button class="lnk" id="mn" aria-label="Next month">›</button></div></div>'+
-  (inst?'<div class="card"><b>Install AnchorWise</b><div class="mu">Add it to your home screen to open it like an app, even offline.</div><button class="btn w" id="inst" style="margin-top:10px">Install</button></div>':'')+
+  return '<div class="top"><div class="brand"><img src="logo-mark.png" width="40" height="40" alt=""><span>Aven</span></div><div class="mnav"><button class="lnk" id="mp" aria-label="Previous month">‹</button><span>'+mlabel()+'</span><button class="lnk" id="mn" aria-label="Next month">›</button></div></div>'+
+  (inst?'<div class="card"><b>Install Aven</b><div class="mu">Add it to your home screen to open it like an app, even offline.</div><button class="btn w" id="inst" style="margin-top:10px">Install</button></div>':'')+
   '<div class="card hero"><div class="mu">Money available</div><div class="big">'+rm(allBal())+'</div><div class="three" style="margin-top:14px"><div><span class="mu">Income</span><b>'+rm(i)+'</b></div><div><span class="mu">Spent</span><b>'+rm(e)+'</b></div><div><span class="mu">Left this month</span><b>'+rm(i-e)+'</b></div></div></div>'+
   '<div class="sec">Your spending habits</div><div class="card">'+(H.B.length?'<div class="chips">'+H.B.slice(0,5).map(function(b){return '<span class="badge">'+b+'</span>'}).join("")+'</div>':'')+
   (H.R.length?H.R.slice(0,4).map(rw).join("")+(H.R.length>4?'<details><summary>More insights ('+(H.R.length-4)+')</summary>'+H.R.slice(4).map(rw).join("")+'</details>':''):'<p class="mu" style="margin:0">Add some spending and your habits will show up here: mamak and delivery, payday and weekend patterns, e-wallet use and more.</p>')+'</div>'+
@@ -950,7 +953,7 @@ Change names ⇒ Tukar nama
 Starting balance ⇒ Baki permulaan
 Starting balance: {} ⇒ Baki permulaan: {1}
 Balance in your account before you started using this app (RM) ⇒ Baki dalam akaun anda sebelum anda mula menggunakan aplikasi ini (RM)
-Install AnchorWise ⇒ Pasang AnchorWise
+Install Aven ⇒ Pasang Aven
 Add it to your home screen to open it like an app, even offline. ⇒ Tambahkan ke skrin utama untuk membukanya seperti aplikasi, walaupun tanpa internet.
 Install ⇒ Pasang
 Previous month ⇒ Bulan sebelumnya

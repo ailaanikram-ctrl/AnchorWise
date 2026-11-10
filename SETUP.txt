@@ -1,8 +1,8 @@
-ANCHORWISE PWA - quick setup
+AVEN PWA - quick setup
 
 Upload all files in this folder to the TOP LEVEL of your GitHub repository
 (Add file > Upload files > drag the files, not the folder > Commit changes).
 Same-named files are replaced by the new ones.
 
 Files: index.html, manifest.webmanifest, sw.js, icon-192.png, icon-512.png,
-icon-maskable-512.png, apple-touch-icon.png
+icon-maskable-512.png, apple-touch-icon.png, logo-mark.png
