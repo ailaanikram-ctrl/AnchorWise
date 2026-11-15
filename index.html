@@ -27,6 +27,8 @@ nav button{flex:1;background:none;color:var(--mut);font-size:13px;padding:6px 2p
 .hl{position:absolute;border-radius:6px;mix-blend-mode:multiply;opacity:.6;border:1px dashed rgba(11,74,61,.3)}
 #sbody{flex:1;overflow:auto;padding:12px 14px 30px}.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.chips button{flex:1;min-width:52px;color:#12302a;font-weight:bold}.chips button.on{outline:3px solid var(--g)}
 .ok{color:var(--g)}.bad{color:var(--warn)}
+.chips.st{position:sticky;top:-12px;background:var(--bg);z-index:3;padding:6px 0}.chips button{line-height:1.2;padding:6px 2px}.it{flex-wrap:wrap;border-radius:12px;padding:10px 8px}.it .acts{width:100%;display:flex;gap:6px;margin-top:4px}.it .acts button{flex:1}.nm{cursor:pointer}.nm b{font-size:18px}
+.foc{outline:3px solid var(--g);outline-offset:1px}.it.foc{background:#fff4c2}.hl.foc{animation:pl 1s infinite alternate}@keyframes pl{to{outline-offset:5px}}
 </style></head><body><main>
 <header><img src="logo.png" alt="Aven"><b>Aven</b></header>
 <section id="home" class="on"><div id="hv"></div>
@@ -69,7 +71,7 @@ function parse(x,ty){let a=(x.match(/(\d+(?:[.,]\d{1,2})?)/)||[])[1];a=a?num(a):
 let k=ty!='auto'?ty:/gaji|salary|income|terima|received|bonus|elaun|untung/i.test(x)?'i':/hutang|pinjam|borrow|owe/i.test(x)?'d':'e';
 const nm=((x.match(/(?:dari|from|kat|with|pinjam|borrow)\s+([A-Za-z]+)/i)||[])[1])||x.replace(/[\d.,]+|rm/gi,'').trim().split(/\s+/)[0]||'?';
 const c=k=='i'?['Pendapatan','💰','','n']:cat(x);return{k,a,nm,c:c[0],w:c[3]}}
-let CUR=0,R=null,Z=1.6;
+let CUR=1,R=null,Z=1.6;
 const month=()=>S.tx.filter(x=>x.d.slice(0,7)==today().slice(0,7));
 function home(){const m=month(),I=m.filter(x=>x.t=='i').reduce((a,b)=>a+b.a,0),E=m.filter(x=>x.t=='e'),O=E.reduce((a,b)=>a+b.a,0);
 const by={};E.forEach(x=>by[x.c]=(by[x.c]||0)+x.a);const cs=Object.entries(by).sort((a,b)=>b[1]-a[1]);
@@ -98,7 +100,7 @@ $('#csvS').onclick=()=>out(new Blob([csv()],{type:'text/csv'}),'aven-'+today()+'
 const NEON=['#39ff14','#ff2bd6','#00e5ff','#ffe600','#ff8a00'];
 $('#cam').onclick=()=>$('#fc').click();$('#gal').onclick=()=>$('#fg').click();$('#fc').onchange=$('#fg').onchange=e=>{if(e.target.files[0])scan(e.target.files[0]);e.target.value=''};
 const getLines=d=>d.lines||(d.blocks||[]).flatMap(b=>b.paragraphs.flatMap(p=>p.lines));
-async function scan(f){$('#scan').classList.add('on');$('#pane').innerHTML='';$('#sbody').innerHTML='<p class="c">Reading receipt… ⏳</p>';
+async function scan(f){CUR=1;$('#scan').classList.add('on');$('#pane').innerHTML='';$('#sbody').innerHTML='<p class="c">Reading receipt… ⏳</p>';
 const im=await new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=URL.createObjectURL(f)});
 const sc=Math.min(2,1800/im.width),cv=document.createElement('canvas');cv.width=im.width*sc|0;cv.height=im.height*sc|0;const x=cv.getContext('2d');x.drawImage(im,0,0,cv.width,cv.height);
 const id=x.getImageData(0,0,cv.width,cv.height),d=id.data;let lo=255,hi=0;for(let i=0;i<d.length;i+=4){const g=.3*d[i]+.59*d[i+1]+.11*d[i+2];d[i]=g;if(g<lo)lo=g;if(g>hi)hi=g}
@@ -113,23 +115,40 @@ if(n.length>=2){u=num(n[0]);p=last;const r=p/u;if(u>0&&Math.abs(r-Math.round(r))
 else if(m){q=+m[1];u=num(m[2]);p=+(q*u).toFixed(2)}else if(m2){u=num(m2[1]);q=+m2[2];p=+(q*u).toFixed(2)}
 const b=l.bbox,W=cv.width,H=cv.height,pad=4;R.items.push({txt:tx.replace(/-?\d{1,5}[.,]\d{2}.*$/,'').replace(/^\W+/,'').trim()||tx,q,u,price:p,p:0,w:wn(tx),x:(b.x0-pad)/W*100,y:(b.y0-pad)/H*100,wd:(b.x1-b.x0+2*pad)/W*100,h:(b.y1-b.y0+2*pad)/H*100})});
 $('#pane').innerHTML=`<div class="zoom" id="zm" style="width:${Z*100}%"><img src="${R.url}">${R.items.map((it,i)=>`<i class="hl" data-i="${i}" style="left:${it.x}%;top:${it.y}%;width:${it.wd}%;height:${it.h}%"></i>`).join('')}</div>`;panel()}
-$('#pane').onclick=e=>{const i=e.target.dataset.i;if(i==null)return;const it=R.items[i];it.p=it.p==CUR?0:CUR;e.target.style.background=it.p?NEON[it.p-1]:'transparent';panel()};
+$('#pane').onclick=e=>{const i=e.target.dataset.i;if(i==null)return;R.foc=+i;assign(+i)};
 $('#zi').onclick=()=>{Z=Math.min(4,Z+.4);$('#zm').style.width=Z*100+'%'};$('#zo').onclick=()=>{Z=Math.max(1,Z-.4);$('#zm').style.width=Z*100+'%'};$('#sx').onclick=()=>{$('#scan').classList.remove('on');R=null};
 const sumI=()=>R.items.reduce((a,b)=>a+b.price,0);
-function panel(){const sm=sumI(),ent=num($('#en')?.value)||R._e||0,tx=num($('#tx2')?.value);R._e=ent;if(!isNaN(tx))R._t=tx;const T=R._t||0;
+const nmOf=it=>(it.txt.replace(/^[\d*#.\-\s]{2,}(?=[A-Za-z])/,'').trim()||it.txt);
+function chips(){const T=R._t||0;for(let p=1;p<=5;p++){const s=R.items.filter(i=>i.p==p).reduce((a,b)=>a+b.price,0),c=$(`[data-c="${p}"]`);if(c)c.innerHTML=`${p}<br><small>${s?rm(s*(1+T/100)):'&nbsp;'}</small>`}}
+function paint(i){const it=R.items[i],b=$('#pane').querySelector(`[data-i="${i}"]`),r=$('#r'+i);if(b)b.style.background=it.p?NEON[it.p-1]:'transparent';if(r){const d=r.querySelector('.dot');d.style.background=it.p?NEON[it.p-1]:'#ddd';d.textContent=it.p||'–'}chips()}
+function assign(i){const it=R.items[i];it.p=it.p==CUR?0:CUR;paint(i)}
+const topIn=(el,box)=>el.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop;
+function focus(i){R.foc=i;$$('.foc').forEach(e=>e.classList.remove('foc'));const b=$('#pane').querySelector(`[data-i="${i}"]`),r=$('#r'+i),P=$('#pane'),B=$('#sbody');
+if(b){b.classList.add('foc');P.scrollTo({top:topIn(b,P)-P.clientHeight/2+b.offsetHeight/2,behavior:'smooth'})}
+if(r){r.classList.add('foc');B.scrollTo({top:topIn(r,B)-B.clientHeight/2+r.offsetHeight/2,behavior:'smooth'})}}
+function nextI(){const n=R.items.length;for(let k=1;k<=n;k++){const i=((R.foc??-1)+k)%n;if(!R.items[i].p)return i}return n?((R.foc??-1)+1)%n:-1}
+function editAmt(i){const it=R.items[i],s=$('#pr'+i);s.innerHTML=`<input type="number" step="0.01" value="${it.price}" style="width:120px;padding:4px">`;const n=s.firstChild;let d=0;n.focus();const ok=()=>{if(d)return;d=1;const v=num(n.value);if(v>=0){it.price=v;it.u=v/it.q}panel()};n.onchange=ok;n.onblur=ok}
+function panel(){const sc=$('#sbody').scrollTop,sm=sumI(),ent=num($('#en')?.value)||R._e||0,tx=num($('#tx2')?.value);R._e=ent;if(!isNaN(tx))R._t=tx;const T=R._t||0;
 const tot=ent||R.total||sm*(1+T/100);
 const okI=!R.total||Math.abs(sm-R.total)<.06||Math.abs(sm+R.tax-R.total)<.06,okE=!ent||!R.total||Math.abs(ent-R.total)<.06;
-R.eff=tot;$('#sbody').innerHTML=`<div class="chips">${NEON.map((c,i)=>`<button data-c="${i+1}" class="${CUR==i+1?'on':''}" style="background:${c}">${i+1}</button>`).join('')}</div><small>${CUR?'Person '+CUR+' ✎':'↑ choose Person 1–5, then tap lines on the receipt'}</small>
+R.eff=tot;$('#sbody').innerHTML=`<div class="chips st">${NEON.map((c,i)=>`<button data-c="${i+1}" class="${CUR==i+1?'on':''}" style="background:${c}">${i+1}</button>`).join('')}</div>
+<button id="hb" style="width:100%;margin:6px 0">🖍 Highlight</button><small>Highlight mode is on. Choose Person 1–5, then tap any item (or its line on the receipt). Tap again to clear.</small>
+${R.items.length?'':'<p class="bad">No priced lines found. Retake the photo, flat and well lit.</p>'}
 <div class="row" style="margin-top:8px"><span class="g">${t('tax')}</span><input id="tx2" type="number" step="0.1" value="${T}" style="width:90px" onchange="panel()"></div>
 <div class="row"><span class="g">${t('ent')}</span><input id="en" type="number" step="0.01" value="${ent||''}" style="width:110px" onchange="panel()"></div>
 <p class="${okI?'ok':'bad'}" style="margin:6px 0">${okI?'✓':'⚠'} Items ${rm(sm)} · Receipt ${R.total?rm(R.total):'?'}${R.tax?' · Tax '+rm(R.tax):''}</p>
 ${ent&&R.total?`<p class="${okE?'ok':'bad'}" style="margin:0 0 6px">${okE?'✓':'⚠'} Scanned ${rm(R.total)} vs typed ${rm(ent)}</p>`:''}
-${R.items.map((it,i)=>`<div class="row"><span class="dot" style="background:${it.p?NEON[it.p-1]:'#ddd'}">${it.p||'–'}</span><span class="g">${esc(it.txt)}<br><small>${it.q>1?it.q+' × '+rm(it.u)+' = ':''}${rm(it.price)}</small></span><button class="t" data-e="${i}">✎</button><button class="t" data-n="${i}">${it.w=='w'?t('want'):t('need')}</button></div>`).join('')}
-<button id="dn2" style="width:100%;margin-top:12px">${t('done')} · ${rm(tot)}</button>`}
+${R.items.map((it,i)=>`<div class="row it${R.foc===i?' foc':''}" id="r${i}" data-r="${i}"><span class="dot" style="background:${it.p?NEON[it.p-1]:'#ddd'}">${it.p||'–'}</span><span class="g nm"><b>${esc(nmOf(it))}</b><br><span id="pr${i}">${it.q>1?it.q+' × '+rm(it.u)+' = ':''}${rm(it.price)}</span></span><div class="acts"><button class="t" data-f="${i}">Highlight</button><button class="t" data-e="${i}">✎ RM</button><button class="t" data-n="${i}">${it.w=='w'?t('want'):t('need')}</button></div></div>`).join('')}
+<button id="dn2" style="width:100%;margin-top:12px">${t('done')} · ${rm(tot)}</button>`;chips();$('#sbody').scrollTop=sc}
 window.panel=panel;
-$('#sbody').onclick=e=>{const d=e.target.dataset;if(d.c){CUR=+d.c===CUR?0:+d.c;panel()}else if(d.e!=null){const it=R.items[d.e],v=num(prompt(it.txt+'\nLine total RM'+(it.q>1?' ('+it.q+' × '+rm(it.u)+')':''),it.price));if(v>=0){it.price=v;it.u=v/it.q;panel()}}else if(d.n!=null){const it=R.items[d.n];it.w=it.w=='w'?'n':'w';panel()}else if(e.target.id=='dn2')finish();else if(d.sh)share(+d.sh);else if(e.target.id=='sa')saveR()};
+$('#sbody').onclick=e=>{const d=e.target.dataset,cb=e.target.closest('[data-c]'),r=e.target.closest('[data-r]'),id=e.target.id;
+if(cb){CUR=+cb.dataset.c;$$('[data-c]').forEach(b=>b.classList.toggle('on',+b.dataset.c==CUR))}
+else if(d.f!=null)focus(+d.f);else if(d.e!=null)editAmt(+d.e);
+else if(d.n!=null){const it=R.items[d.n];it.w=it.w=='w'?'n':'w';e.target.textContent=t(it.w=='w'?'want':'need')}
+else if(id=='hb'){const i=nextI();if(i>=0)focus(i)}else if(id=='dn2')finish();else if(d.sh)share(+d.sh);else if(id=='sa')saveR();else if(id=='bk')panel();
+else if(r&&e.target.tagName!='INPUT')assign(+r.dataset.r)};
 function shares(){const T=R._t||0,o=[];for(let p=1;p<=5;p++){const its=R.items.filter(i=>i.p==p);if(its.length){const s=its.reduce((a,b)=>a+b.price,0);o.push({p,its,amt:+(s*(1+T/100)).toFixed(2)})}}return o}
-function finish(){const sh=shares();if(!sh.length)return saveR();R.names=R.names||{};$('#sbody').innerHTML=`<h3>${t('split')}</h3>`+sh.map(s=>`<div class="row"><span class="dot" style="background:${NEON[s.p-1]}">${s.p}</span><input value="${esc(R.names[s.p]||'Person '+s.p)}" style="flex:1" onchange="R.names[${s.p}]=this.value"><b>${rm(s.amt)}</b><button class="t" data-sh="${s.p}">${t('share')}</button></div>`).join('')+`<button id="sa" style="width:100%;margin-top:12px">${t('saveA')}</button>`}
+function finish(){const sh=shares();if(!sh.length)return saveR();R.names=R.names||{};$('#sbody').innerHTML=`<h3>${t('split')}</h3>`+sh.map(s=>`<div class="row"><span class="dot" style="background:${NEON[s.p-1]}">${s.p}</span><input value="${esc(R.names[s.p]||'Person '+s.p)}" style="flex:1" onchange="R.names[${s.p}]=this.value"><b>${rm(s.amt)}</b><button class="t" data-sh="${s.p}">${t('share')}</button></div>`).join('')+`<button id="sa" style="width:100%;margin-top:12px">${t('saveA')}</button><button id="bk" class="s" style="width:100%;margin-top:8px">← Highlight</button>`}
 function share(p){const s=shares().find(z=>z.p==p),nm=(R.names?.[p]||'Person'+p).replace(/[^\w-]+/g,'_'),W=R.cv.width,H=R.cv.height,L=W>H+120?'l':'p';
 const d=new jspdf.jsPDF({unit:'px',format:[W,H+120],orientation:L,hotfixes:['px_scaling']});d.setFontSize(34);d.text(`${nm} - ${rm(s.amt)} - ${R.date}`,30,70);d.addImage(R.url,'JPEG',0,110,W,H);d.setGState(new d.GState({opacity:.5}));d.setFillColor(NEON[p-1]);
 s.its.forEach(i=>d.roundedRect(i.x/100*W,110+i.y/100*H,i.wd/100*W,i.h/100*H,6,6,'F'));out(d.output('blob'),`${nm}-${s.amt.toFixed(2)}-${R.date}.pdf`,1)}
