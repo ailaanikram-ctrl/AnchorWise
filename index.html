@@ -31,6 +31,7 @@ nav button{flex:1;background:none;color:var(--mut);font-size:13px;padding:6px 2p
 .foc{outline:3px solid var(--g);outline-offset:1px}.it.foc{background:#fff4c2}.hl.foc{animation:pl 1s infinite alternate}@keyframes pl{to{outline-offset:5px}}
 .spl{width:100%;background:var(--bg);border-radius:12px;padding:8px;margin-top:6px}.sdr{display:flex;align-items:center;gap:8px;margin:4px 0}.sdr input[type=checkbox]{width:22px;height:22px;margin:0}.sdr input[type=number]{width:90px;padding:4px}
 #pvw{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;z-index:12}#pvw.on{display:flex}#pvb{flex:1;overflow:auto;padding:0 14px}
+.chips button small{color:#12302a;font-size:12px}
 </style></head><body><main>
 <header><img src="logo.png" alt="Aven"><b>Aven</b></header>
 <section id="home" class="on"><div id="hv"></div>
@@ -67,9 +68,9 @@ const CAT=[['Makanan','🍜',/nasi|\bmee\b|mamak|makan|lunch|dinner|breakfast|ko
 ['Beli-belah','🛍️',/shopee|lazada|tiktok|zalora|baju|kasut|\bbeli\b|shop/i,'w'],
 ['Sedekah & Zakat','🤲',/zakat|sedekah|derma|tabung|infaq/i,'n'],['Lain-lain','📦',/./,'n']];
 const COL=['#0b4a3d','#3f7d63','#6f9f80','#a9c4a0','#c9b98f','#d9a66b','#b5765a','#8c9a8e','#7a8f6a','#b9b27a','#9ab7b0','#cfc8b4'];
-const WANT=/candy|gula-?gula|coklat|chocolate|chips|keropok|ice ?cream|aiskrim|soda|coke|pepsi|sprite|100 ?plus|snack|biskut|cookie|boba|game|toy|mainan|jelly|wafer|sweet|permen|energy|redbull|chitato|twisties|jacker|cadbury|oreo|munchy|minuman|drink|cake|kek/i;
+const WANT=/candy|gula-?gula|coklat|chocolate|chips|keropok|ice ?cream|aiskrim|soda|coke|pepsi|sprite|100 ?plus|snack|biskut|cookie|boba|game|toy|mainan|jelly|wafer|sweet|permen|energy|redbull|chitato|twisties|jacker|cadbury|oreo|munchy|cake|kek/i;
 const NEED=/sayur|vegetable|bayam|kangkung|sawi|kobis|tomato|bawang|lobak|ayam|ikan|daging|telur|egg|beras|rice|minyak|oil|gula|sugar|garam|salt|susu|milk|roti|bread|mineral|sabun|soap|shampoo|tisu|tissue|ubat|medicine|lampin|diaper|tepung|flour|mee|noodle|sardin|bateri|battery|gas|plastik|detergent|clorox|pencuci/i;
-const cat=x=>CAT.find(c=>c[2].test(x));const wn=x=>WANT.test(x)?'w':NEED.test(x)?'n':'n';
+const cat=x=>CAT.find(c=>c[2].test(x));const wn=x=>/water|mineral|air kosong/i.test(x)?'n':WANT.test(x)?'w':'n';
 function parse(x,ty){let a=(x.match(/(\d+(?:[.,]\d{1,2})?)/)||[])[1];a=a?num(a):0;
 let k=ty!='auto'?ty:/gaji|salary|income|terima|received|bonus|elaun|untung/i.test(x)?'i':/hutang|pinjam|borrow|owe/i.test(x)?'d':'e';
 const nm=((x.match(/(?:dari|from|kat|with|pinjam|borrow)\s+([A-Za-z]+)/i)||[])[1])||x.replace(/[\d.,]+|rm/gi,'').trim().split(/\s+/)[0]||'?';
@@ -105,21 +106,23 @@ $('#cam').onclick=()=>$('#fc').click();$('#gal').onclick=()=>$('#fg').click();$(
 const getLines=d=>d.lines||(d.blocks||[]).flatMap(b=>b.paragraphs.flatMap(p=>p.lines));
 async function scan(f){CUR=1;$('#scan').classList.add('on');$('#pane').innerHTML='';$('#sbody').innerHTML='<p class="c">Reading receipt… ⏳</p>';
 const im=await new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=URL.createObjectURL(f)});
-const sc=Math.min(2,1800/im.width),cv=document.createElement('canvas');cv.width=im.width*sc|0;cv.height=im.height*sc|0;const x=cv.getContext('2d');x.drawImage(im,0,0,cv.width,cv.height);const oc=document.createElement('canvas');oc.width=cv.width;oc.height=cv.height;oc.getContext('2d').drawImage(cv,0,0);
+const sc=Math.min(2,1800/im.width,8000/im.height),cv=document.createElement('canvas');cv.width=im.width*sc|0;cv.height=im.height*sc|0;const x=cv.getContext('2d');x.drawImage(im,0,0,cv.width,cv.height);const oc=document.createElement('canvas');oc.width=cv.width;oc.height=cv.height;oc.getContext('2d').drawImage(cv,0,0);
 const id=x.getImageData(0,0,cv.width,cv.height),d=id.data;let lo=255,hi=0;for(let i=0;i<d.length;i+=4){const g=.3*d[i]+.59*d[i+1]+.11*d[i+2];d[i]=g;if(g<lo)lo=g;if(g>hi)hi=g}
 for(let i=0;i<d.length;i+=4){const v=255*Math.pow((d[i]-lo)/Math.max(1,hi-lo),1.4);d[i]=d[i+1]=d[i+2]=v}x.putImageData(id,0,0);
 let ls=[];try{const w=await Tesseract.createWorker('eng');await w.setParameters({tessedit_pageseg_mode:'6',preserve_interword_spaces:'1'});const r=await w.recognize(cv);await w.terminate();ls=getLines(r.data)}catch(e){$('#sbody').innerHTML='<p class="bad">OCR could not load (needs internet the first time).</p>'}
 R={cv,oc,url:oc.toDataURL('image/jpeg',.85),pdfs:{},names:{},force:{},items:[],total:0,tax:0,store:'',date:today()};
 const P=/-?\d{1,5}[.,]\d{2}/g,SKIP=/total|jumlah|cash|tunai|change|baki|round|visa|master|debit|card|\bqr\b|gst|sst|tax|cukai|disc|diskaun|point|mata|tender|bayar/i;
-ls.forEach(l=>{const tx=l.text.trim(),n=tx.match(P);if(!R.store){const s=tx.match(/mr\.? ?diy|giant|lotus|99 ?speed\w*|kk ?mart|7-?eleven/i);if(s)R.store=s[0]}
+let prevL=null;ls.forEach(l=>{const tx=l.text.trim(),n=tx.match(P);if(!R.store){const s=tx.match(/mr\.? ?diy|giant|lotus|99 ?speed\w*|kk ?mart|7-?eleven/i);if(s)R.store=s[0]}
 if(!R.rdate){const m=tx.match(/\b(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4})\b/);if(m)R.rdate=m[1]}
-if(!R.no){const m=tx.match(/(?:inv(?:oice)?|receipt|rcpt|trans(?:action)?|txn|bill|slip)\s*(?:no|num|#)?\s*[.:#]?\s*([A-Z0-9][A-Z0-9\-\/]{4,})/i);if(m)R.no=m[1]}
-if(!n)return;
-const last=num(n[n.length-1]);if(/total|jumlah|amount due/i.test(tx)&&!/sub/i.test(tx)){R.total=Math.max(R.total,last);return}if(/gst|sst|tax|cukai/i.test(tx)){R.tax=last;return}if(/-\s?\d{1,5}[.,]\d{2}|disc|diskaun|rebate|promo/i.test(tx)&&R.items.length){const pv=R.items[R.items.length-1],dd=Math.abs(last);pv.disc=(pv.disc||0)+dd;pv.price=+(pv.price-dd).toFixed(2);return}if(SKIP.test(tx))return;
+if(!R.no){const m=tx.match(/(?:invoice|inv|receipt|rcpt|transaction|trans|txn|bill|slip)\s*(?:number|num|no|#)?\s*[.:#]*\s*([A-Z0-9](?=[A-Z0-9\-\/]*\d)[A-Z0-9\-\/]{4,})/i);if(m)R.no=m[1]}
+if(!n){if(/[A-Za-z]{3}/.test(tx)&&!SKIP.test(tx))prevL={tx,b:l.bbox};else prevL=null;return}const pl=prevL;prevL=null;
+const last=num(n[n.length-1]);if(/excl|before/i.test(tx)&&/total|tax|sst|gst|sales/i.test(tx))return;if(/total|jumlah|amount due/i.test(tx)&&!/sub|saving|disc|qty|item|point/i.test(tx)){R.total=Math.max(R.total,last);return}if(/gst|sst|tax|cukai/i.test(tx)){R.tax=last;return}if(/-\s?\d{1,5}[.,]\d{2}|disc|diskaun|rebate|promo/i.test(tx)&&R.items.length){const pv=R.items[R.items.length-1],dd=Math.abs(last);pv.disc=(pv.disc||0)+dd;pv.price=+(pv.price-dd).toFixed(2);return}if(SKIP.test(tx))return;
 let q=1,u=last,p=last;const m=tx.match(/(\d{1,3})\s*[xX@*]\s*(\d{1,4}[.,]\d{2})/),m2=tx.match(/(\d{1,4}[.,]\d{2})\s*[xX@*]\s*(\d{1,3})\b/);
 if(n.length>=2){u=num(n[0]);p=last;const r=p/u;if(u>0&&Math.abs(r-Math.round(r))<.02&&r>=1)q=Math.round(r);else{u=p}}
 else if(m){q=+m[1];u=num(m[2]);p=+(q*u).toFixed(2)}else if(m2){u=num(m2[1]);q=+m2[2];p=+(q*u).toFixed(2)}
-const b=l.bbox,W=cv.width,H=cv.height,pad=4;R.items.push({txt:tx.replace(/-?\d{1,5}[.,]\d{2}.*$/,'').replace(/^\W+/,'').trim()||tx,q,u,price:p,p:0,w:wn(tx),x:(b.x0-pad)/W*100,y:(b.y0-pad)/H*100,wd:(b.x1-b.x0+2*pad)/W*100,h:(b.y1-b.y0+2*pad)/H*100})});
+let nm=tx.replace(/-?\d{1,5}[.,]\d{2}.*$/,'').replace(/\d{1,3}\s*[xX@*]\s*$/,'').replace(/^\W+/,'').trim(),b=l.bbox,x0=b.x0,y0=b.y0,x1=b.x1,y1=b.y1;
+if((nm.match(/[A-Za-z]/g)||[]).length<3&&pl&&b.y0-pl.b.y1<1.3*(b.y1-b.y0)){nm=pl.tx.replace(/^\W+/,'').trim();x0=Math.min(x0,pl.b.x0);y0=Math.min(y0,pl.b.y0);x1=Math.max(x1,pl.b.x1)}
+const W=cv.width,H=cv.height,pad=4;R.items.push({txt:nm||tx,q,u,price:p,p:0,w:wn(nm||tx),x:(x0-pad)/W*100,y:(y0-pad)/H*100,wd:(x1-x0+2*pad)/W*100,h:(y1-y0+2*pad)/H*100})});
 $('#pane').innerHTML=`<div class="zoom" id="zm" style="width:${Z*100}%"><img src="${R.url}">${R.items.map((it,i)=>`<i class="hl" data-i="${i}" style="left:${it.x}%;top:${it.y}%;width:${it.wd}%;height:${it.h}%"></i>`).join('')}</div>`;panel()}
 $('#pane').onclick=e=>{const i=e.target.dataset.i;if(i==null)return;R.foc=+i;assign(+i)};
 $('#zi').onclick=()=>{Z=Math.min(4,Z+.4);$('#zm').style.width=Z*100+'%'};$('#zo').onclick=()=>{Z=Math.max(1,Z-.4);$('#zm').style.width=Z*100+'%'};$('#sx').onclick=()=>{$('#pvw').classList.remove('on');$('#scan').classList.remove('on');R=null};
@@ -146,6 +149,7 @@ function assign(i){const it=R.items[i];if(it.sp){it.sp=null;it.p=CUR}else it.p=i
 function sdOpen(i){const it=R.items[i];R.sd={i,ps:(it.sp||[]).slice(),md:it.md||'eq',cv:Object.assign({},it.cv||{})};if(!R.sd.ps.length&&it.p)R.sd.ps=[it.p];R.spOpen=R.spOpen===i?-1:i;panel()}
 function sdHtml(){const s=R.sd,it=R.items[s.i],tmp={price:it.price,q:it.q,sp:s.ps,md:s.md,cv:s.cv},r=cents(tmp);
 return `<div class="spl"><select data-sm="1"><option value="eq"${s.md=='eq'?' selected':''}>Split equally</option><option value="qty"${s.md=='qty'?' selected':''}>By quantity (${it.q} units)</option><option value="cu"${s.md=='cu'?' selected':''}>Custom RM</option></select>`+[1,2,3,4,5].map(p=>{const on=s.ps.includes(p);return `<label class="sdr"><span class="dot" style="background:${NEON[p-1]}">${p}</span><input type="checkbox" data-spc="${p}" ${on?'checked':''}> ${on?(s.md=='eq'?rm((r.c[p]||0)/100):`<input type="number" step="${s.md=='qty'?1:.01}" data-sv="${p}" value="${s.cv[p]??''}" placeholder="${s.md=='qty'?'units':'RM'}">`):''}</label>`}).join('')+`<small id="sdt" class="${r.ok?'ok':'bad'}">${s.ps.length<2?'Choose at least 2 people':r.ok?'✓ Adds up to '+rm(it.price):'⚠ '+r.msg}</small><div class="acts"><button class="t" data-sa="1">Apply split</button><button class="t s" data-sc="1">Close</button>${it.sp?'<button class="t s" data-su="1">Unshare</button>':''}</div></div>`}
+function sdStatus(){const s=R.sd,it=R.items[s.i],r=cents({price:it.price,q:it.q,sp:s.ps,md:s.md,cv:s.cv}),el=$('#sdt');if(el){el.className=r.ok&&s.ps.length>1?'ok':'bad';el.textContent=s.ps.length<2?'Choose at least 2 people':r.ok?'✓ Adds up to '+rm(it.price):'⚠ '+r.msg}}
 function renderSd(){const el=$('#sp'+R.sd.i);if(el)el.innerHTML=sdHtml()}
 function spClick(e){const d=e.target.dataset,s=R.sd,it=R.items[s.i];
 if(d.spc){const p=+d.spc;s.ps=s.ps.includes(p)?s.ps.filter(x=>x!=p):[...s.ps,p].sort();renderSd()}
@@ -153,13 +157,15 @@ else if(d.sa){if(s.ps.length<2){renderSd();return}const r=cents({price:it.price,
 else if(d.sc){R.spOpen=-1;panel()}else if(d.su){it.sp=null;it.p=0;R.spOpen=-1;panel()}}
 $('#sbody').addEventListener('change',e=>{const d=e.target.dataset;if(d.nm){R.names[d.nm]=e.target.value;recRender()}
 else if(d.ra){const it=R.items[d.ra.split(',')[0]];it.p=+e.target.value;recRender()}
-else if(d.sm&&R.sd){R.sd.md=e.target.value;renderSd()}else if(d.sv&&R.sd){R.sd.cv[d.sv]=num(e.target.value)||0;renderSd()}});
+else if(d.sm&&R.sd){R.sd.md=e.target.value;renderSd()}else if(d.sv&&R.sd){R.sd.cv[d.sv]=num(e.target.value)||0;sdStatus()}});
+$('#sbody').addEventListener('input',e=>{if(e.target.dataset.sv&&R.sd){R.sd.cv[e.target.dataset.sv]=num(e.target.value)||0;sdStatus()}});
 const topIn=(el,box)=>el.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop;
 function focus(i){R.foc=i;$$('.foc').forEach(e=>e.classList.remove('foc'));const b=$('#pane').querySelector(`[data-i="${i}"]`),r=$('#r'+i),P=$('#pane'),B=$('#sbody');
 if(b){b.classList.add('foc');P.scrollTo({top:topIn(b,P)-P.clientHeight/2+b.offsetHeight/2,behavior:'smooth'})}
 if(r){r.classList.add('foc');B.scrollTo({top:topIn(r,B)-B.clientHeight/2+r.offsetHeight/2,behavior:'smooth'})}}
 function nextI(){const n=R.items.length;for(let k=1;k<=n;k++){const i=((R.foc??-1)+k)%n;if(!R.items[i].p)return i}return n?((R.foc??-1)+1)%n:-1}
-function editAmt(i){const it=R.items[i],s=$('#pr'+i);s.innerHTML=`<input type="number" step="0.01" value="${it.price}" style="width:120px;padding:4px">`;const n=s.firstChild;let d=0;n.focus();const ok=()=>{if(d)return;d=1;const v=num(n.value);if(v>=0){it.price=v;it.u=v/it.q}panel()};n.onchange=ok;n.onblur=ok}
+function edHtml(i){const it=R.items[i];return `<div class="spl ed" id="ed${i}" style="width:100%"><input id="edn" value="${esc(nmOf(it))}" placeholder="Item name"><div class="sdr"><span class="m">Qty</span><input id="edq" type="number" min="1" value="${it.q}" style="width:80px"><span class="m">Total RM</span><input id="edp" type="number" step="0.01" value="${it.price}" style="width:110px"></div><div class="acts"><button class="t" data-es="${i}">Save</button><button class="t s" data-ec="1">Close</button></div></div>`}
+function edClick(e){const d=e.target.dataset;if(d.ec){R.edOpen=-1;panel()}else if(d.es){const it=R.items[+d.es],nm=$('#edn').value.trim(),q=Math.max(1,Math.round(num($('#edq').value)||1)),pr=num($('#edp').value);if(nm)it.txt=nm;it.q=q;if(pr>=0)it.price=+pr.toFixed(2);it.u=+((it.price+(it.disc||0))/q).toFixed(2);R.edOpen=-1;panel()}}
 function panel(){R.view='hl';const sc=$('#sbody').scrollTop,sm=sumI(),ent=num($('#en')?.value)||R._e||0,tx=num($('#tx2')?.value);R._e=ent;if(!isNaN(tx))R._t=tx;const T=R._t||0;
 const tot=ent||R.total||sm*(1+T/100);
 const okI=!R.total||Math.abs(sm-R.total)<.06||Math.abs(sm+R.tax-R.total)<.06,okE=!ent||!R.total||Math.abs(ent-R.total)<.06;
@@ -170,12 +176,12 @@ ${R.items.length?'':'<p class="bad">No priced lines found. Retake the photo, fla
 <div class="row"><span class="g">${t('ent')}</span><input id="en" type="number" step="0.01" value="${ent||''}" style="width:110px" onchange="panel()"></div>
 <p class="${okI?'ok':'bad'}" style="margin:6px 0">${okI?'✓':'⚠'} Items ${rm(sm)} · Receipt ${R.total?rm(R.total):'?'}${R.tax?' · Tax '+rm(R.tax):''}</p>
 ${ent&&R.total?`<p class="${okE?'ok':'bad'}" style="margin:0 0 6px">${okE?'✓':'⚠'} Scanned ${rm(R.total)} vs typed ${rm(ent)}</p>`:''}
-${R.items.map((it,i)=>`<div class="row it${R.foc===i?' foc':''}" id="r${i}" data-r="${i}"><span class="dot" style="background:${hlBg(it)=='transparent'?'#ddd':hlBg(it)}">${it.sp&&it.sp.length>1?'⇄':it.p||(it.sp&&it.sp[0])||'–'}</span><span class="g nm"><b>${esc(nmOf(it))}</b><br><span id="pr${i}">${it.q>1?it.q+' × '+rm(it.u)+' = ':''}${it.disc?'disc −'+it.disc.toFixed(2)+' · ':''}${rm(it.price)}</span></span><div class="acts"><button class="t" data-f="${i}">Highlight</button><button class="t" data-sp="${i}">Split</button><button class="t" data-e="${i}">✎ RM</button><button class="t" data-n="${i}">${it.w=='w'?t('want'):t('need')}</button></div>${R.spOpen===i&&R.sd?`<div id="sp${i}" style="width:100%">${sdHtml()}</div>`:''}</div>`).join('')}
+${R.items.map((it,i)=>`<div class="row it${R.foc===i?' foc':''}" id="r${i}" data-r="${i}"><span class="dot" style="background:${hlBg(it)=='transparent'?'#ddd':hlBg(it)}">${it.sp&&it.sp.length>1?'⇄':it.p||(it.sp&&it.sp[0])||'–'}</span><span class="g nm"><b>${esc(nmOf(it))}</b><br><span id="pr${i}">${it.q>1?it.q+' × '+rm(it.u)+' = ':''}${it.disc?'disc −'+it.disc.toFixed(2)+' · ':''}${rm(it.price)}</span></span><div class="acts"><button class="t" data-f="${i}">Highlight</button><button class="t" data-sp="${i}">Split</button><button class="t" data-e="${i}">✎ Edit</button><button class="t" data-n="${i}">${it.w=='w'?t('want'):t('need')}</button></div>${R.spOpen===i&&R.sd?`<div id="sp${i}" style="width:100%">${sdHtml()}</div>`:''}${R.edOpen===i?edHtml(i):''}</div>`).join('')}
 <button id="dn2" style="width:100%;margin-top:12px">Receipts · ${rm(tot)}</button>`;chips();$('#sbody').scrollTop=sc}
 window.panel=panel;
-$('#sbody').onclick=e=>{if(R&&R.view=='rec')return recClick(e);if(e.target.closest('.spl'))return spClick(e);const d=e.target.dataset,cb=e.target.closest('[data-c]'),r=e.target.closest('[data-r]'),id=e.target.id;
+$('#sbody').onclick=e=>{if(R&&R.view=='rec')return recClick(e);if(e.target.closest('.ed'))return edClick(e);if(e.target.closest('.spl'))return spClick(e);const d=e.target.dataset,cb=e.target.closest('[data-c]'),r=e.target.closest('[data-r]'),id=e.target.id;
 if(cb){CUR=+cb.dataset.c;$$('[data-c]').forEach(b=>b.classList.toggle('on',+b.dataset.c==CUR))}
-else if(d.sp!=null)sdOpen(+d.sp);else if(d.f!=null)focus(+d.f);else if(d.e!=null)editAmt(+d.e);
+else if(d.sp!=null)sdOpen(+d.sp);else if(d.f!=null)focus(+d.f);else if(d.e!=null){R.edOpen=R.edOpen===+d.e?-1:+d.e;panel()}
 else if(d.n!=null){const it=R.items[d.n];it.w=it.w=='w'?'n':'w';e.target.textContent=t(it.w=='w'?'want':'need')}
 else if(id=='hb'){const i=nextI();if(i>=0)focus(i)}else if(id=='dn2')finish();else if(d.sh)share(+d.sh);else if(id=='sa')saveR();else if(id=='bk')panel();
 else if(r&&e.target.tagName!='INPUT')assign(+r.dataset.r)};
@@ -226,7 +232,7 @@ h+=`<div class="card"><div class="row" style="border:0"><span class="dot" style=
 h+=has||R.force[p]?`<p style="margin:0">Amount to Pay Back: <b style="font-size:22px;color:var(--g)">${rm(pp.amt)}</b></p><small>${st}</small>`:`<p class="m" style="margin:0">No items assigned</p>`;
 h+=pp.lines.map(l=>`<div class="row"><span class="g"><b>${esc(nmOf(l.it))}</b><br><small>${l.sh?'shared · your share ':''}${rm(l.amt)}</small></span>${l.sh?'':`<select data-ra="${l.i}" style="width:84px">${[1,2,3,4,5].map(q=>`<option value="${q}"${q==p?' selected':''}>${esc(nameOf(q)).slice(0,8)}</option>`).join('')}</select>`}<button class="t" data-rm="${l.i},${p}">✕</button></div>`).join('');
 h+=has||R.force[p]?`<div class="bt" style="margin-top:8px"><button class="s t" data-gp="${p}">Preview PDF</button><button class="s t" data-gd="${p}">Download PDF</button></div><button data-gs="${p}" style="width:100%;margin-top:6px">Send Receipt: ${esc(nameOf(p))}</button>`:`<button class="s t" data-fo="${p}">Create empty request anyway</button>`;h+='</div>'}
-h+=`<button data-ga="1" style="width:100%">Generate All Receipts</button><button id="sa" class="s" style="width:100%;margin-top:8px">${t('saveA')}</button>`;B.innerHTML=h;B.scrollTop=sc}
+h+=`<button data-ga="1" style="width:100%">Generate All Receipts</button><button id="sa" class="s" style="width:100%;margin-top:8px">${t('saveA')}</button>`;B.innerHTML=h;B.scrollTop=sc;R.note=null}
 function recClick(e){const d=e.target.dataset,i=e.target.id;
 if(i=='bk'){R.view='hl';panel()}
 else if(d.ru){R.view='hl';R.warn=0;panel();const k=R.items.findIndex(it=>!Object.keys(partsOf(it)).length);if(k>=0)setTimeout(()=>focus(k),60)}
