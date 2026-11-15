@@ -29,6 +29,8 @@ nav button{flex:1;background:none;color:var(--mut);font-size:13px;padding:6px 2p
 .ok{color:var(--g)}.bad{color:var(--warn)}
 .chips.st{position:sticky;top:-12px;background:var(--bg);z-index:3;padding:6px 0}.chips button{line-height:1.2;padding:6px 2px}.it{flex-wrap:wrap;border-radius:12px;padding:10px 8px}.it .acts{width:100%;display:flex;gap:6px;margin-top:4px}.it .acts button{flex:1}.nm{cursor:pointer}.nm b{font-size:18px}
 .foc{outline:3px solid var(--g);outline-offset:1px}.it.foc{background:#fff4c2}.hl.foc{animation:pl 1s infinite alternate}@keyframes pl{to{outline-offset:5px}}
+.spl{width:100%;background:var(--bg);border-radius:12px;padding:8px;margin-top:6px}.sdr{display:flex;align-items:center;gap:8px;margin:4px 0}.sdr input[type=checkbox]{width:22px;height:22px;margin:0}.sdr input[type=number]{width:90px;padding:4px}
+#pvw{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;z-index:12}#pvw.on{display:flex}#pvb{flex:1;overflow:auto;padding:0 14px}
 </style></head><body><main>
 <header><img src="logo.png" alt="Aven"><b>Aven</b></header>
 <section id="home" class="on"><div id="hv"></div>
@@ -44,6 +46,7 @@ nav button{flex:1;background:none;color:var(--mut);font-size:13px;padding:6px 2p
 </main>
 <nav id="nav"></nav>
 <div id="scan"><div style="display:flex;align-items:center;padding:10px 14px;gap:10px"><b style="flex:1;color:var(--g)" data-t="scan"></b><button class="s t" id="zo">−</button><button class="s t" id="zi">+</button><button class="s t" id="sx">✕</button></div><div id="pane"></div><div id="sbody"></div></div>
+<div id="pvw"><div style="display:flex;padding:10px 14px;gap:8px;align-items:center"><b id="pvt" style="flex:1;color:var(--g)"></b><button class="s t" id="pvc">Cancel</button></div><div id="pvb"></div><div style="display:flex;gap:8px;padding:10px 14px"><button class="s" id="pvd" style="flex:1">Download PDF</button><button id="pvs" style="flex:1">Send Receipt</button></div></div>
 <div id="tut"><h2 style="color:var(--g)" data-t="tut"></h2><div id="tt"></div><button id="tx" style="margin-top:12px;width:100%" data-t="done"></button></div>
 <script>
 const L={en:{home:'Home',exp:'Expenses',debts:'Debts',log:'Log',set:'Settings',lang:'Language',tut:'How to use Aven',csvS:'Save CSV',csvP:'Send CSV',done:'Done',scan:'Scan receipt',scanH:'Take a photo, then tap lines to highlight who bought what.',cam:'📷 Camera',gal:'🖼 Gallery',paste:'Paste a message or type it in',oE:'Expense',oI:'Income',oD:'Debt (I borrowed)',save:'Save',inc:'Income',out:'Spent',left:'Left',where:'Where your money goes',nw:'Needs vs Wants',unn:'Could have skipped',adv:'Advice',owe:'Who you owe',pay:'Pay',empty:'Nothing yet',need:'Need',want:'Want',tax:'Tax %',ent:'Total on receipt (type it)',split:'Split & share',saveA:'Save to Aven',share:'Share PDF'},
@@ -102,33 +105,62 @@ $('#cam').onclick=()=>$('#fc').click();$('#gal').onclick=()=>$('#fg').click();$(
 const getLines=d=>d.lines||(d.blocks||[]).flatMap(b=>b.paragraphs.flatMap(p=>p.lines));
 async function scan(f){CUR=1;$('#scan').classList.add('on');$('#pane').innerHTML='';$('#sbody').innerHTML='<p class="c">Reading receipt… ⏳</p>';
 const im=await new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=URL.createObjectURL(f)});
-const sc=Math.min(2,1800/im.width),cv=document.createElement('canvas');cv.width=im.width*sc|0;cv.height=im.height*sc|0;const x=cv.getContext('2d');x.drawImage(im,0,0,cv.width,cv.height);
+const sc=Math.min(2,1800/im.width),cv=document.createElement('canvas');cv.width=im.width*sc|0;cv.height=im.height*sc|0;const x=cv.getContext('2d');x.drawImage(im,0,0,cv.width,cv.height);const oc=document.createElement('canvas');oc.width=cv.width;oc.height=cv.height;oc.getContext('2d').drawImage(cv,0,0);
 const id=x.getImageData(0,0,cv.width,cv.height),d=id.data;let lo=255,hi=0;for(let i=0;i<d.length;i+=4){const g=.3*d[i]+.59*d[i+1]+.11*d[i+2];d[i]=g;if(g<lo)lo=g;if(g>hi)hi=g}
 for(let i=0;i<d.length;i+=4){const v=255*Math.pow((d[i]-lo)/Math.max(1,hi-lo),1.4);d[i]=d[i+1]=d[i+2]=v}x.putImageData(id,0,0);
 let ls=[];try{const w=await Tesseract.createWorker('eng');await w.setParameters({tessedit_pageseg_mode:'6',preserve_interword_spaces:'1'});const r=await w.recognize(cv);await w.terminate();ls=getLines(r.data)}catch(e){$('#sbody').innerHTML='<p class="bad">OCR could not load (needs internet the first time).</p>'}
-R={cv,url:cv.toDataURL('image/jpeg',.85),items:[],total:0,tax:0,store:'',date:today()};
+R={cv,oc,url:oc.toDataURL('image/jpeg',.85),pdfs:{},names:{},force:{},items:[],total:0,tax:0,store:'',date:today()};
 const P=/-?\d{1,5}[.,]\d{2}/g,SKIP=/total|jumlah|cash|tunai|change|baki|round|visa|master|debit|card|\bqr\b|gst|sst|tax|cukai|disc|diskaun|point|mata|tender|bayar/i;
-ls.forEach(l=>{const tx=l.text.trim(),n=tx.match(P);if(!R.store){const s=tx.match(/mr\.? ?diy|giant|lotus|99 ?speed\w*|kk ?mart|7-?eleven/i);if(s)R.store=s[0]}if(!n)return;
-const last=num(n[n.length-1]);if(/total|jumlah|amount due/i.test(tx)&&!/sub/i.test(tx)){R.total=Math.max(R.total,last);return}if(/gst|sst|tax|cukai/i.test(tx)){R.tax=last;return}if(SKIP.test(tx))return;
+ls.forEach(l=>{const tx=l.text.trim(),n=tx.match(P);if(!R.store){const s=tx.match(/mr\.? ?diy|giant|lotus|99 ?speed\w*|kk ?mart|7-?eleven/i);if(s)R.store=s[0]}
+if(!R.rdate){const m=tx.match(/\b(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4})\b/);if(m)R.rdate=m[1]}
+if(!R.no){const m=tx.match(/(?:inv(?:oice)?|receipt|rcpt|trans(?:action)?|txn|bill|slip)\s*(?:no|num|#)?\s*[.:#]?\s*([A-Z0-9][A-Z0-9\-\/]{4,})/i);if(m)R.no=m[1]}
+if(!n)return;
+const last=num(n[n.length-1]);if(/total|jumlah|amount due/i.test(tx)&&!/sub/i.test(tx)){R.total=Math.max(R.total,last);return}if(/gst|sst|tax|cukai/i.test(tx)){R.tax=last;return}if(/-\s?\d{1,5}[.,]\d{2}|disc|diskaun|rebate|promo/i.test(tx)&&R.items.length){const pv=R.items[R.items.length-1],dd=Math.abs(last);pv.disc=(pv.disc||0)+dd;pv.price=+(pv.price-dd).toFixed(2);return}if(SKIP.test(tx))return;
 let q=1,u=last,p=last;const m=tx.match(/(\d{1,3})\s*[xX@*]\s*(\d{1,4}[.,]\d{2})/),m2=tx.match(/(\d{1,4}[.,]\d{2})\s*[xX@*]\s*(\d{1,3})\b/);
 if(n.length>=2){u=num(n[0]);p=last;const r=p/u;if(u>0&&Math.abs(r-Math.round(r))<.02&&r>=1)q=Math.round(r);else{u=p}}
 else if(m){q=+m[1];u=num(m[2]);p=+(q*u).toFixed(2)}else if(m2){u=num(m2[1]);q=+m2[2];p=+(q*u).toFixed(2)}
 const b=l.bbox,W=cv.width,H=cv.height,pad=4;R.items.push({txt:tx.replace(/-?\d{1,5}[.,]\d{2}.*$/,'').replace(/^\W+/,'').trim()||tx,q,u,price:p,p:0,w:wn(tx),x:(b.x0-pad)/W*100,y:(b.y0-pad)/H*100,wd:(b.x1-b.x0+2*pad)/W*100,h:(b.y1-b.y0+2*pad)/H*100})});
 $('#pane').innerHTML=`<div class="zoom" id="zm" style="width:${Z*100}%"><img src="${R.url}">${R.items.map((it,i)=>`<i class="hl" data-i="${i}" style="left:${it.x}%;top:${it.y}%;width:${it.wd}%;height:${it.h}%"></i>`).join('')}</div>`;panel()}
 $('#pane').onclick=e=>{const i=e.target.dataset.i;if(i==null)return;R.foc=+i;assign(+i)};
-$('#zi').onclick=()=>{Z=Math.min(4,Z+.4);$('#zm').style.width=Z*100+'%'};$('#zo').onclick=()=>{Z=Math.max(1,Z-.4);$('#zm').style.width=Z*100+'%'};$('#sx').onclick=()=>{$('#scan').classList.remove('on');R=null};
+$('#zi').onclick=()=>{Z=Math.min(4,Z+.4);$('#zm').style.width=Z*100+'%'};$('#zo').onclick=()=>{Z=Math.max(1,Z-.4);$('#zm').style.width=Z*100+'%'};$('#sx').onclick=()=>{$('#pvw').classList.remove('on');$('#scan').classList.remove('on');R=null};
 const sumI=()=>R.items.reduce((a,b)=>a+b.price,0);
 const nmOf=it=>(it.txt.replace(/^[\d*#.\-\s]{2,}(?=[A-Za-z])/,'').trim()||it.txt);
-function chips(){const T=R._t||0;for(let p=1;p<=5;p++){const s=R.items.filter(i=>i.p==p).reduce((a,b)=>a+b.price,0),c=$(`[data-c="${p}"]`);if(c)c.innerHTML=`${p}<br><small>${s?rm(s*(1+T/100)):'&nbsp;'}</small>`}}
-function paint(i){const it=R.items[i],b=$('#pane').querySelector(`[data-i="${i}"]`),r=$('#r'+i);if(b)b.style.background=it.p?NEON[it.p-1]:'transparent';if(r){const d=r.querySelector('.dot');d.style.background=it.p?NEON[it.p-1]:'#ddd';d.textContent=it.p||'–'}chips()}
-function assign(i){const it=R.items[i];it.p=it.p==CUR?0:CUR;paint(i)}
+const nameOf=p=>(R.names[p]||'').trim()||'Person '+p;
+function cents(it){const P=Math.round(it.price*100),ps=it.sp||[],n=ps.length,c={},cv=it.cv||{};let ok=true,msg='';
+if(!n)return{c,ok:false,msg:'Choose people'};
+if(it.md=='qty'){const u=ps.reduce((a,p)=>a+(cv[p]||0),0);ps.forEach(p=>c[p]=Math.round(P*(cv[p]||0)/it.q));if(u!=it.q){ok=false;msg=`Units ${u} of ${it.q}`}else c[ps[0]]+=P-ps.reduce((a,p)=>a+c[p],0)}
+else if(it.md=='cu'){ps.forEach(p=>c[p]=Math.round((cv[p]||0)*100));const s=ps.reduce((a,p)=>a+c[p],0);if(s!=P){ok=false;msg=`RM${(s/100).toFixed(2)} of RM${(P/100).toFixed(2)}`}}
+else{const b=Math.floor(P/n);ps.forEach((p,k)=>c[p]=b+(k<P-b*n?1:0))}
+return{c,ok,msg}}
+function partsOf(it){const o={};if(it.sp&&it.sp.length){const r=cents(it);it.sp.forEach(p=>o[p]=(r.c[p]||0)/100)}else if(it.p)o[it.p]=it.price;return o}
+function calc(){const Fc=Math.round((R.eff||sumI())*100),subs=[0,0,0,0,0,0],lines=[[],[],[],[],[],[]];
+R.items.forEach((it,i)=>{const pr=partsOf(it),ks=Object.keys(pr);if(!ks.length){subs[0]+=Math.round(it.price*100);return}ks.forEach(p=>{subs[p]+=Math.round(pr[p]*100);lines[p].push({it,i,amt:pr[p],sh:ks.length>1?ks.length:0})})});
+const Sc=subs.reduce((a,b)=>a+b,0),raw=subs.map(v=>Sc?v*Fc/Sc:0),fl=raw.map(Math.floor);let rem=Fc-fl.reduce((a,b)=>a+b,0);
+raw.map((v,k)=>[v-fl[k],k]).sort((a,b)=>b[0]-a[0]).forEach(([,k])=>{if(rem>0&&subs[k]>0){fl[k]++;rem--}});
+const per={};for(let p=1;p<=5;p++)per[p]={sub:subs[p]/100,amt:fl[p]/100,lines:lines[p]};
+return{F:Fc/100,S:Sc/100,per,un:{sub:subs[0]/100,amt:fl[0]/100}}}
+const hlBg=it=>it.sp&&it.sp.length?(it.sp.length>1?`linear-gradient(90deg,${it.sp.map(p=>NEON[p-1]).join(',')})`:NEON[it.sp[0]-1]):it.p?NEON[it.p-1]:'transparent';
+function chips(){const c=calc();for(let p=1;p<=5;p++){const el=$(`[data-c="${p}"]`),a=c.per[p].amt;if(el)el.innerHTML=`${p}<br><small>${c.per[p].lines.length?rm(a):'&nbsp;'}</small>`}}
+function paint(i){const it=R.items[i],b=$('#pane').querySelector(`[data-i="${i}"]`),r=$('#r'+i),bg=hlBg(it);if(b)b.style.background=bg;if(r){const d=r.querySelector('.dot');d.style.background=bg=='transparent'?'#ddd':bg;d.textContent=it.sp&&it.sp.length>1?'⇄':it.p||(it.sp&&it.sp[0])||'–'}chips()}
+function assign(i){const it=R.items[i];if(it.sp){it.sp=null;it.p=CUR}else it.p=it.p==CUR?0:CUR;paint(i)}
+function sdOpen(i){const it=R.items[i];R.sd={i,ps:(it.sp||[]).slice(),md:it.md||'eq',cv:Object.assign({},it.cv||{})};if(!R.sd.ps.length&&it.p)R.sd.ps=[it.p];R.spOpen=R.spOpen===i?-1:i;panel()}
+function sdHtml(){const s=R.sd,it=R.items[s.i],tmp={price:it.price,q:it.q,sp:s.ps,md:s.md,cv:s.cv},r=cents(tmp);
+return `<div class="spl"><select data-sm="1"><option value="eq"${s.md=='eq'?' selected':''}>Split equally</option><option value="qty"${s.md=='qty'?' selected':''}>By quantity (${it.q} units)</option><option value="cu"${s.md=='cu'?' selected':''}>Custom RM</option></select>`+[1,2,3,4,5].map(p=>{const on=s.ps.includes(p);return `<label class="sdr"><span class="dot" style="background:${NEON[p-1]}">${p}</span><input type="checkbox" data-spc="${p}" ${on?'checked':''}> ${on?(s.md=='eq'?rm((r.c[p]||0)/100):`<input type="number" step="${s.md=='qty'?1:.01}" data-sv="${p}" value="${s.cv[p]??''}" placeholder="${s.md=='qty'?'units':'RM'}">`):''}</label>`}).join('')+`<small id="sdt" class="${r.ok?'ok':'bad'}">${s.ps.length<2?'Choose at least 2 people':r.ok?'✓ Adds up to '+rm(it.price):'⚠ '+r.msg}</small><div class="acts"><button class="t" data-sa="1">Apply split</button><button class="t s" data-sc="1">Close</button>${it.sp?'<button class="t s" data-su="1">Unshare</button>':''}</div></div>`}
+function renderSd(){const el=$('#sp'+R.sd.i);if(el)el.innerHTML=sdHtml()}
+function spClick(e){const d=e.target.dataset,s=R.sd,it=R.items[s.i];
+if(d.spc){const p=+d.spc;s.ps=s.ps.includes(p)?s.ps.filter(x=>x!=p):[...s.ps,p].sort();renderSd()}
+else if(d.sa){if(s.ps.length<2){renderSd();return}const r=cents({price:it.price,q:it.q,sp:s.ps,md:s.md,cv:s.cv});if(!r.ok){renderSd();return}it.sp=s.ps;it.md=s.md;it.cv=s.cv;it.p=0;R.spOpen=-1;panel()}
+else if(d.sc){R.spOpen=-1;panel()}else if(d.su){it.sp=null;it.p=0;R.spOpen=-1;panel()}}
+$('#sbody').addEventListener('change',e=>{const d=e.target.dataset;if(d.nm){R.names[d.nm]=e.target.value;recRender()}
+else if(d.ra){const it=R.items[d.ra.split(',')[0]];it.p=+e.target.value;recRender()}
+else if(d.sm&&R.sd){R.sd.md=e.target.value;renderSd()}else if(d.sv&&R.sd){R.sd.cv[d.sv]=num(e.target.value)||0;renderSd()}});
 const topIn=(el,box)=>el.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop;
 function focus(i){R.foc=i;$$('.foc').forEach(e=>e.classList.remove('foc'));const b=$('#pane').querySelector(`[data-i="${i}"]`),r=$('#r'+i),P=$('#pane'),B=$('#sbody');
 if(b){b.classList.add('foc');P.scrollTo({top:topIn(b,P)-P.clientHeight/2+b.offsetHeight/2,behavior:'smooth'})}
 if(r){r.classList.add('foc');B.scrollTo({top:topIn(r,B)-B.clientHeight/2+r.offsetHeight/2,behavior:'smooth'})}}
 function nextI(){const n=R.items.length;for(let k=1;k<=n;k++){const i=((R.foc??-1)+k)%n;if(!R.items[i].p)return i}return n?((R.foc??-1)+1)%n:-1}
 function editAmt(i){const it=R.items[i],s=$('#pr'+i);s.innerHTML=`<input type="number" step="0.01" value="${it.price}" style="width:120px;padding:4px">`;const n=s.firstChild;let d=0;n.focus();const ok=()=>{if(d)return;d=1;const v=num(n.value);if(v>=0){it.price=v;it.u=v/it.q}panel()};n.onchange=ok;n.onblur=ok}
-function panel(){const sc=$('#sbody').scrollTop,sm=sumI(),ent=num($('#en')?.value)||R._e||0,tx=num($('#tx2')?.value);R._e=ent;if(!isNaN(tx))R._t=tx;const T=R._t||0;
+function panel(){R.view='hl';const sc=$('#sbody').scrollTop,sm=sumI(),ent=num($('#en')?.value)||R._e||0,tx=num($('#tx2')?.value);R._e=ent;if(!isNaN(tx))R._t=tx;const T=R._t||0;
 const tot=ent||R.total||sm*(1+T/100);
 const okI=!R.total||Math.abs(sm-R.total)<.06||Math.abs(sm+R.tax-R.total)<.06,okE=!ent||!R.total||Math.abs(ent-R.total)<.06;
 R.eff=tot;$('#sbody').innerHTML=`<div class="chips st">${NEON.map((c,i)=>`<button data-c="${i+1}" class="${CUR==i+1?'on':''}" style="background:${c}">${i+1}</button>`).join('')}</div>
@@ -138,20 +170,70 @@ ${R.items.length?'':'<p class="bad">No priced lines found. Retake the photo, fla
 <div class="row"><span class="g">${t('ent')}</span><input id="en" type="number" step="0.01" value="${ent||''}" style="width:110px" onchange="panel()"></div>
 <p class="${okI?'ok':'bad'}" style="margin:6px 0">${okI?'✓':'⚠'} Items ${rm(sm)} · Receipt ${R.total?rm(R.total):'?'}${R.tax?' · Tax '+rm(R.tax):''}</p>
 ${ent&&R.total?`<p class="${okE?'ok':'bad'}" style="margin:0 0 6px">${okE?'✓':'⚠'} Scanned ${rm(R.total)} vs typed ${rm(ent)}</p>`:''}
-${R.items.map((it,i)=>`<div class="row it${R.foc===i?' foc':''}" id="r${i}" data-r="${i}"><span class="dot" style="background:${it.p?NEON[it.p-1]:'#ddd'}">${it.p||'–'}</span><span class="g nm"><b>${esc(nmOf(it))}</b><br><span id="pr${i}">${it.q>1?it.q+' × '+rm(it.u)+' = ':''}${rm(it.price)}</span></span><div class="acts"><button class="t" data-f="${i}">Highlight</button><button class="t" data-e="${i}">✎ RM</button><button class="t" data-n="${i}">${it.w=='w'?t('want'):t('need')}</button></div></div>`).join('')}
-<button id="dn2" style="width:100%;margin-top:12px">${t('done')} · ${rm(tot)}</button>`;chips();$('#sbody').scrollTop=sc}
+${R.items.map((it,i)=>`<div class="row it${R.foc===i?' foc':''}" id="r${i}" data-r="${i}"><span class="dot" style="background:${hlBg(it)=='transparent'?'#ddd':hlBg(it)}">${it.sp&&it.sp.length>1?'⇄':it.p||(it.sp&&it.sp[0])||'–'}</span><span class="g nm"><b>${esc(nmOf(it))}</b><br><span id="pr${i}">${it.q>1?it.q+' × '+rm(it.u)+' = ':''}${it.disc?'disc −'+it.disc.toFixed(2)+' · ':''}${rm(it.price)}</span></span><div class="acts"><button class="t" data-f="${i}">Highlight</button><button class="t" data-sp="${i}">Split</button><button class="t" data-e="${i}">✎ RM</button><button class="t" data-n="${i}">${it.w=='w'?t('want'):t('need')}</button></div>${R.spOpen===i&&R.sd?`<div id="sp${i}" style="width:100%">${sdHtml()}</div>`:''}</div>`).join('')}
+<button id="dn2" style="width:100%;margin-top:12px">Receipts · ${rm(tot)}</button>`;chips();$('#sbody').scrollTop=sc}
 window.panel=panel;
-$('#sbody').onclick=e=>{const d=e.target.dataset,cb=e.target.closest('[data-c]'),r=e.target.closest('[data-r]'),id=e.target.id;
+$('#sbody').onclick=e=>{if(R&&R.view=='rec')return recClick(e);if(e.target.closest('.spl'))return spClick(e);const d=e.target.dataset,cb=e.target.closest('[data-c]'),r=e.target.closest('[data-r]'),id=e.target.id;
 if(cb){CUR=+cb.dataset.c;$$('[data-c]').forEach(b=>b.classList.toggle('on',+b.dataset.c==CUR))}
-else if(d.f!=null)focus(+d.f);else if(d.e!=null)editAmt(+d.e);
+else if(d.sp!=null)sdOpen(+d.sp);else if(d.f!=null)focus(+d.f);else if(d.e!=null)editAmt(+d.e);
 else if(d.n!=null){const it=R.items[d.n];it.w=it.w=='w'?'n':'w';e.target.textContent=t(it.w=='w'?'want':'need')}
 else if(id=='hb'){const i=nextI();if(i>=0)focus(i)}else if(id=='dn2')finish();else if(d.sh)share(+d.sh);else if(id=='sa')saveR();else if(id=='bk')panel();
 else if(r&&e.target.tagName!='INPUT')assign(+r.dataset.r)};
-function shares(){const T=R._t||0,o=[];for(let p=1;p<=5;p++){const its=R.items.filter(i=>i.p==p);if(its.length){const s=its.reduce((a,b)=>a+b.price,0);o.push({p,its,amt:+(s*(1+T/100)).toFixed(2)})}}return o}
-function finish(){const sh=shares();if(!sh.length)return saveR();R.names=R.names||{};$('#sbody').innerHTML=`<h3>${t('split')}</h3>`+sh.map(s=>`<div class="row"><span class="dot" style="background:${NEON[s.p-1]}">${s.p}</span><input value="${esc(R.names[s.p]||'Person '+s.p)}" style="flex:1" onchange="R.names[${s.p}]=this.value"><b>${rm(s.amt)}</b><button class="t" data-sh="${s.p}">${t('share')}</button></div>`).join('')+`<button id="sa" style="width:100%;margin-top:12px">${t('saveA')}</button><button id="bk" class="s" style="width:100%;margin-top:8px">← Highlight</button>`}
-function share(p){const s=shares().find(z=>z.p==p),nm=(R.names?.[p]||'Person'+p).replace(/[^\w-]+/g,'_'),W=R.cv.width,H=R.cv.height,L=W>H+120?'l':'p';
-const d=new jspdf.jsPDF({unit:'px',format:[W,H+120],orientation:L,hotfixes:['px_scaling']});d.setFontSize(34);d.text(`${nm} - ${rm(s.amt)} - ${R.date}`,30,70);d.addImage(R.url,'JPEG',0,110,W,H);d.setGState(new d.GState({opacity:.5}));d.setFillColor(NEON[p-1]);
-s.its.forEach(i=>d.roundedRect(i.x/100*W,110+i.y/100*H,i.wd/100*W,i.h/100*H,6,6,'F'));out(d.output('blob'),`${nm}-${s.amt.toFixed(2)}-${R.date}.pdf`,1)}
+const safe=s=>s.replace(/[^A-Za-z0-9_-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40)||'Person';
+const fname=(p,a)=>`Receipt_${safe(nameOf(p))}_RM${a.toFixed(2)}.pdf`;
+function note(m,bad){R.note={msg:m,bad}}
+function chk(){const c=calc(),unI=R.items.filter(it=>!Object.keys(partsOf(it)).length).length,pr=R.tax||((R._t||0)?c.S*R._t/100:0),ex=+(c.F-c.S-pr).toFixed(2);return{c,unI,ex,bad:unI>0||Math.abs(ex)>.1,ws:[unI,Math.abs(ex)>.1,c.un.amt].join('|')}}
+function gate(){const bs=R.items.filter(it=>it.sp&&!cents(it).ok);if(bs.length){note('The split for "'+nmOf(bs[0])+'" no longer equals its price. Re-apply it in Highlight → Split.',1);return false}
+const k=chk();if(k.bad&&R.okSig!=k.ws){R.warn=1;return false}R.warn=0;return true}
+function sig(p){const c=calc(),pp=c.per[p];return JSON.stringify([nameOf(p),pp.amt,c.F,R.store,R.no,R.rdate,pp.lines.map(l=>[nmOf(l.it),l.it.q,l.it.u,l.it.disc||0,l.amt,l.sh])])}
+function hlCanvas(p){const c=document.createElement('canvas');c.width=R.oc.width;c.height=R.oc.height;const x=c.getContext('2d');x.drawImage(R.oc,0,0);x.globalCompositeOperation='multiply';x.globalAlpha=.55;x.fillStyle=NEON[p-1];
+R.items.forEach(it=>{if(p in partsOf(it))x.fillRect(it.x/100*c.width,it.y/100*c.height,it.wd/100*c.width,it.h/100*c.height)});return c}
+function imgPages(d,cv,title){const W=595,H=842,M=24,iw=W-2*M,s=iw/cv.width,sh=Math.floor((H-2*M-20)/s);d.setTextColor(35,64,58);d.setFont('helvetica','normal');
+for(let y0=0,k=1;y0<cv.height;y0+=sh,k++){d.addPage();const h=Math.min(sh,cv.height-y0),t=document.createElement('canvas');t.width=cv.width;t.height=h;t.getContext('2d').drawImage(cv,0,y0,cv.width,h,0,0,cv.width,h);d.setFontSize(10);d.text(`${title} (page ${k})`,M,M);d.addImage(t.toDataURL('image/jpeg',.88),'JPEG',M,M+8,iw,h*s)}}
+function buildPdf(p){const c=calc(),pp=c.per[p],d=new window.jspdf.jsPDF({unit:'pt',format:'a4'}),W=595,H=842,M=36,X=W-M;let y=M+6;
+d.setFont('helvetica','bold');d.setFontSize(20);d.setTextColor(11,74,61);d.text('Payment Summary',M,y);y+=24;d.setFont('helvetica','normal');d.setFontSize(11);d.setTextColor(35,64,58);
+[['Name',nameOf(p)],['Date',R.rdate||R.date],['Merchant',R.store||'-'],['Receipt no.',R.no||'-']].forEach(([k,v])=>{d.text(k+': '+v,M,y);y+=16});y+=6;
+const hd=()=>{d.setFont('helvetica','bold');d.setFontSize(10);d.text('Item (RM)',M,y);d.text('Qty',330,y,{align:'right'});d.text('Unit',392,y,{align:'right'});d.text('Disc.',458,y,{align:'right'});d.text('Amount',X,y,{align:'right'});d.line(M,y+4,X,y+4);y+=18;d.setFont('helvetica','normal')};hd();
+pp.lines.forEach(l=>{const it=l.it,nm=d.splitTextToSize(nmOf(it),270);if(y+nm.length*13+30>H-M){d.addPage();y=M+6;hd()}
+d.setFontSize(10);d.text(nm,M,y);d.text(String(it.q),330,y,{align:'right'});d.text(it.u.toFixed(2),392,y,{align:'right'});if(it.disc)d.text('-'+it.disc.toFixed(2),458,y,{align:'right'});d.text(l.amt.toFixed(2),X,y,{align:'right'});y+=nm.length*13;
+if(l.sh){d.setFontSize(8);d.text(`Shared item (total RM ${it.price.toFixed(2)}) with ${l.sh-1} other${l.sh>2?'s':''}. Only your share is shown.`,M,y);y+=11}y+=5});
+if(!pp.lines.length){d.text('No items assigned.',M,y);y+=18}
+d.line(M,y,X,y);y+=16;d.setFontSize(11);d.text('Items subtotal',M,y);d.text(rm(pp.sub),X,y,{align:'right'});y+=16;const ex=+(pp.amt-pp.sub).toFixed(2);
+if(Math.abs(ex)>=.01){d.text('Share of tax / service / rounding',M,y);d.text((ex<0?'-':'')+rm(Math.abs(ex)),X,y,{align:'right'});y+=16}
+if(y>H-90){d.addPage();y=M+6}
+d.setFillColor(11,74,61);d.roundedRect(M,y+4,X-M,44,8,8,'F');d.setTextColor(246,241,227);d.setFont('helvetica','bold');d.setFontSize(13);d.text('TOTAL AMOUNT TO PAY BACK',M+12,y+31);d.setFontSize(18);d.text(rm(pp.amt),X-12,y+32,{align:'right'});
+imgPages(d,R.oc,'Original receipt');imgPages(d,hlCanvas(p),'Highlighted receipt - '+nameOf(p));return d}
+async function getPdf(p){const sg=sig(p),o=R.pdfs[p];if(o&&o.sig==sg)return o;const a=calc().per[p].amt,blob=buildPdf(p).output('blob');return R.pdfs[p]={sig:sg,blob,name:fname(p,a),amt:a}}
+function dl(o){const a=document.createElement('a');a.href=URL.createObjectURL(o.blob);a.download=o.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+async function sendR(p){const o=await getPdf(p),f=new File([o.blob],o.name,{type:'application/pdf'}),tx=`Hi ${nameOf(p)}, this is your purchase receipt. Your total amount to pay back is ${rm(o.amt)}. The PDF includes your item breakdown, the original receipt, and a highlighted copy showing your items. Thank you.`;
+if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:o.name,text:tx});note('Share menu opened for '+nameOf(p)+'.')}catch(e){e.name=='AbortError'?note('Sharing cancelled. Nothing was sent.'):note('Sharing failed: '+e.message,1)}}
+else{dl(o);note('This browser cannot share files, so the PDF was downloaded instead. Attach it in WhatsApp or email yourself.',1)}}
+function sumHtml(p){const c=calc(),pp=c.per[p],ex=+(pp.amt-pp.sub).toFixed(2);return `<div class="card"><h3>${esc(nameOf(p))}</h3><small>${esc(R.store||'')} ${esc(R.rdate||R.date)} ${R.no?'· '+esc(R.no):''}</small>`+pp.lines.map(l=>`<div class="row"><span class="g"><b>${esc(nmOf(l.it))}</b><br><small>Qty ${l.it.q} · RM ${l.it.u.toFixed(2)} × ${l.it.q}${l.it.disc?' · discount −RM '+l.it.disc.toFixed(2):''}${l.sh?' · shared with '+(l.sh-1)+' other(s), your share only':''}</small></span><b>${rm(l.amt)}</b></div>`).join('')+(pp.lines.length?'':'<p class="m">No items assigned</p>')+`${Math.abs(ex)>=.01?`<div class="row"><span class="g">Share of tax / service / rounding</span><b>${rm(ex)}</b></div>`:''}<div style="background:var(--g);color:#f6f1e3;border-radius:14px;padding:12px;margin-top:8px;display:flex;justify-content:space-between;font-weight:bold"><span>TOTAL AMOUNT TO PAY BACK</span><span>${rm(pp.amt)}</span></div></div>`}
+async function previewR(p){await getPdf(p);R.pv=p;$('#pvt').textContent=nameOf(p)+' · '+rm(calc().per[p].amt);$('#pvb').innerHTML=sumHtml(p)+`<h3>Original receipt</h3><img src="${R.url}" style="width:100%"><h3>Highlighted receipt (${esc(nameOf(p))} only)</h3><img src="${hlCanvas(p).toDataURL('image/jpeg',.8)}" style="width:100%">`;$('#pvw').classList.add('on')}
+$('#pvc').onclick=()=>$('#pvw').classList.remove('on');
+$('#pvd').onclick=async()=>{try{dl(await getPdf(R.pv));note('Downloaded.')}catch(e){note('PDF failed: '+e.message,1)}recRender()};
+$('#pvs').onclick=async()=>{if(!gate()){$('#pvw').classList.remove('on');return recRender()}try{await sendR(R.pv)}catch(e){note('PDF failed: '+e.message,1)}recRender()};
+async function act(p,m){R.note=null;if(!gate())return recRender();try{if(m=='pv')await previewR(p);else if(m=='dl'){dl(await getPdf(p));note('Downloaded '+R.pdfs[p].name)}else await sendR(p)}catch(e){note('PDF failed: '+e.message,1)}recRender()}
+async function genAll(){R.note=null;if(!gate())return recRender();let n=0;try{for(let p=1;p<=5;p++)if(calc().per[p].lines.length||R.force[p]){await getPdf(p);n++}note(n?`Generated ${n} PDF${n>1?'s':''}. Download or send each one below.`:'No one has assigned items yet.',!n)}catch(e){note('PDF failed: '+e.message,1)}recRender()}
+function unassign(k,p){const it=R.items[k];if(it.sp){it.sp=it.sp.filter(x=>x!=p);if(it.sp.length==1){it.p=it.sp[0];it.sp=null}else if(it.sp.length){it.md='eq';it.cv={}}else it.sp=null}else if(it.p==p)it.p=0;recRender()}
+function recRender(){R.view='rec';const B=$('#sbody'),sc=B.scrollTop,k=chk(),c=k.c,asg=[1,2,3,4,5].reduce((a,p)=>a+c.per[p].amt,0),okSum=Math.abs(c.F-asg-c.un.amt)<.005;
+let h=`<button id="bk" class="s" style="width:100%">← Highlight</button>${R.note?`<p class="${R.note.bad?'bad':'ok'}">${esc(R.note.msg)}</p>`:''}`;
+if(R.warn)h+=`<div class="card" style="border-color:var(--warn)"><b class="bad">${k.unI?'Some receipt items have not been assigned to any person. Please review them before generating the final PDFs.':'Items and tax do not match the receipt total (difference '+rm(k.ex)+'). Please review before generating the final PDFs.'}</b><div class="bt" style="margin-top:8px">${k.unI?'<button data-ru="1">Review unassigned</button>':''}<button class="s" data-ca="1">Continue anyway</button></div></div>`;
+h+=`<div class="card" style="margin-top:8px"><h3>Check</h3><div class="row"><span class="g">Assigned to people</span><b>${rm(asg)}</b></div><div class="row"><span class="g">Unassigned (${k.unI} item${k.unI==1?'':'s'})</span><b class="${c.un.amt?'bad':''}">${rm(c.un.amt)}</b></div><div class="row"><span class="g">Receipt total</span><b>${rm(c.F)}</b></div>
+<p class="${okSum?'ok':'bad'}" style="margin:6px 0 0">${okSum?'✓':'⚠'} ${rm(asg)} + ${rm(c.un.amt)} = ${rm(c.F)}</p><p class="${Math.abs(k.ex)>.1?'bad':'ok'}" style="margin:0">${Math.abs(k.ex)>.1?'⚠':'✓'} Difference still to resolve: ${rm(k.ex)}</p>${k.unI?'<button class="s t" data-ru="1" style="margin-top:6px">Review unassigned</button>':''}</div>`;
+for(let p=1;p<=5;p++){const pp=c.per[p],has=pp.lines.length>0,o=R.pdfs[p],st=!o?'Not generated':o.sig==sig(p)?'PDF ready ✓':'Outdated · will regenerate';
+h+=`<div class="card"><div class="row" style="border:0"><span class="dot" style="background:${NEON[p-1]}">${p}</span><input data-nm="${p}" value="${esc(nameOf(p))}" style="flex:1"></div>`;
+h+=has||R.force[p]?`<p style="margin:0">Amount to Pay Back: <b style="font-size:22px;color:var(--g)">${rm(pp.amt)}</b></p><small>${st}</small>`:`<p class="m" style="margin:0">No items assigned</p>`;
+h+=pp.lines.map(l=>`<div class="row"><span class="g"><b>${esc(nmOf(l.it))}</b><br><small>${l.sh?'shared · your share ':''}${rm(l.amt)}</small></span>${l.sh?'':`<select data-ra="${l.i}" style="width:84px">${[1,2,3,4,5].map(q=>`<option value="${q}"${q==p?' selected':''}>${esc(nameOf(q)).slice(0,8)}</option>`).join('')}</select>`}<button class="t" data-rm="${l.i},${p}">✕</button></div>`).join('');
+h+=has||R.force[p]?`<div class="bt" style="margin-top:8px"><button class="s t" data-gp="${p}">Preview PDF</button><button class="s t" data-gd="${p}">Download PDF</button></div><button data-gs="${p}" style="width:100%;margin-top:6px">Send Receipt: ${esc(nameOf(p))}</button>`:`<button class="s t" data-fo="${p}">Create empty request anyway</button>`;h+='</div>'}
+h+=`<button data-ga="1" style="width:100%">Generate All Receipts</button><button id="sa" class="s" style="width:100%;margin-top:8px">${t('saveA')}</button>`;B.innerHTML=h;B.scrollTop=sc}
+function recClick(e){const d=e.target.dataset,i=e.target.id;
+if(i=='bk'){R.view='hl';panel()}
+else if(d.ru){R.view='hl';R.warn=0;panel();const k=R.items.findIndex(it=>!Object.keys(partsOf(it)).length);if(k>=0)setTimeout(()=>focus(k),60)}
+else if(d.ca){R.okSig=chk().ws;R.warn=0;recRender()}
+else if(d.gp)act(+d.gp,'pv');else if(d.gd)act(+d.gd,'dl');else if(d.gs)act(+d.gs,'sh');else if(d.ga)genAll();
+else if(d.fo){R.force[d.fo]=1;recRender()}else if(d.rm){const[k,p]=d.rm.split(',').map(Number);unassign(k,p)}else if(i=='sa')saveR()}
+const finish=recRender;
 function saveR(){const T=R.eff||sumI(),sN=R.items.filter(i=>i.w!='w').reduce((a,b)=>a+b.price,0),sW=R.items.filter(i=>i.w=='w').reduce((a,b)=>a+b.price,0),s=sN+sW||1;
 const c=(cat(R.store)||CAT[2]),n='Resit '+(R.store||'');[['n',sN],['w',sW]].forEach(([w,v])=>{const a=+(T*v/s).toFixed(2);if(a>0)addTx({t:'e',a,c:c[0],n:n+(w=='w'?' (kehendak)':''),w})});sv();$('#scan').classList.remove('on');R=null;render();tab('home')}
 // ---- tutorial, nav, boot
